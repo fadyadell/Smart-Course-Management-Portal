@@ -1,0 +1,9 @@
+C:\Users\Asus\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\SmartCourseManagement.API.csproj.AssemblyReference.cache
+C:\Users\Asus\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\rpswa.dswa.cache.json
+C:\Users\Asus\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\SmartCourseManagement.API.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Asus\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\SmartCourseManagement.API.AssemblyInfoInputs.cache
+C:\Users\Asus\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\SmartCourseManagement.API.AssemblyInfo.cs
+C:\Users\Asus\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\SmartCourseManagement.API.csproj.CoreCompileInputs.cache
+C:\Users\Asus\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\SmartCourseManagement.API.MvcApplicationPartsAssemblyInfo.cs
+C:\Users\Asus\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\SmartCourseManagement.API.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\Asus\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\SmartCourseManagement.API.sourcelink.json
