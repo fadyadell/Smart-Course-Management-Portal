@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +7,10 @@ using SmartCourseManagement.API.DTOs;
 
 namespace SmartCourseManagement.API.Services
 {
+    /// <summary>
+    /// Handles student listing and lookup. Filters users by role "Student".
+    /// Uses AsNoTracking() + Select() LINQ projections for optimization.
+    /// </summary>
     public class StudentService : IStudentService
     {
         private readonly AppDbContext _context;
@@ -17,10 +20,11 @@ namespace SmartCourseManagement.API.Services
             _context = context;
         }
 
+        /// <summary>Returns all users with the Student role, projected to StudentReadDto.</summary>
         public async Task<IEnumerable<StudentReadDto>> GetAllStudentsAsync()
         {
             return await _context.Users
-                .AsNoTracking()
+                .AsNoTracking() // Read-only optimization
                 .Where(u => u.Role == "Student")
                 .Select(u => new StudentReadDto
                 {
@@ -31,6 +35,7 @@ namespace SmartCourseManagement.API.Services
                 .ToListAsync();
         }
 
+        /// <summary>Returns a single student by ID.</summary>
         public async Task<StudentReadDto> GetStudentByIdAsync(int id)
         {
             return await _context.Users

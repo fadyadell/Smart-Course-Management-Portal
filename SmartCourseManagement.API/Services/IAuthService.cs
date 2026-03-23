@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SmartCourseManagement.API.DTOs;
-using SmartCourseManagement.API.Models;
 
 namespace SmartCourseManagement.API.Services
 {
+    /// <summary>
+    /// Interface for authentication operations: register and login.
+    /// </summary>
     public interface IAuthService
     {
         Task<AuthResponseDto> RegisterAsync(UserRegisterDto registerDto);

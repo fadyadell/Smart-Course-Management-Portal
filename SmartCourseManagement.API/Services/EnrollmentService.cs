@@ -9,6 +9,10 @@ using SmartCourseManagement.API.Models;
 
 namespace SmartCourseManagement.API.Services
 {
+    /// <summary>
+    /// Handles student enrollment and unenrollment operations.
+    /// Demonstrates the Many-to-Many relationship between Students and Courses.
+    /// </summary>
     public class EnrollmentService : IEnrollmentService
     {
         private readonly AppDbContext _context;
@@ -18,10 +22,11 @@ namespace SmartCourseManagement.API.Services
             _context = context;
         }
 
+        /// <summary>Returns all enrollments for a given student using AsNoTracking() + Select().</summary>
         public async Task<IEnumerable<EnrollmentReadDto>> GetStudentEnrollmentsAsync(int studentId)
         {
             return await _context.Enrollments
-                .AsNoTracking()
+                .AsNoTracking() // Read-only query optimization
                 .Where(e => e.StudentId == studentId)
                 .Select(e => new EnrollmentReadDto
                 {
@@ -35,22 +40,28 @@ namespace SmartCourseManagement.API.Services
                 .ToListAsync();
         }
 
+        /// <summary>Enrolls a student in a course. Throws if already enrolled.</summary>
         public async Task<EnrollmentReadDto> EnrollStudentAsync(EnrollmentCreateDto enrollmentDto)
         {
-            // Check if already enrolled
-            if (await _context.Enrollments.AnyAsync(e => e.StudentId == enrollmentDto.StudentId && e.CourseId == enrollmentDto.CourseId))
-                throw new Exception("Student already enrolled in this course");
+            // Prevent duplicate enrollments
+            if (await _context.Enrollments.AnyAsync(
+                e => e.StudentId == enrollmentDto.StudentId && e.CourseId == enrollmentDto.CourseId))
+            {
+                throw new Exception("Student is already enrolled in this course.");
+            }
 
-            var enrollment = new SmartCourseManagement.API.Models.Enrollment
+            var enrollment = new Enrollment
             {
                 StudentId = enrollmentDto.StudentId,
-                CourseId = enrollmentDto.CourseId
+                CourseId = enrollmentDto.CourseId,
+                EnrollmentDate = DateTime.UtcNow
             };
 
             _context.Enrollments.Add(enrollment);
             await _context.SaveChangesAsync();
 
-            var result = await _context.Enrollments
+            // Return the created enrollment as a DTO using LINQ projection
+            return await _context.Enrollments
                 .AsNoTracking()
                 .Where(e => e.Id == enrollment.Id)
                 .Select(e => new EnrollmentReadDto
@@ -63,10 +74,9 @@ namespace SmartCourseManagement.API.Services
                     EnrollmentDate = e.EnrollmentDate
                 })
                 .FirstOrDefaultAsync();
-
-            return result;
         }
 
+        /// <summary>Removes an enrollment by ID. Returns false if not found.</summary>
         public async Task<bool> UnenrollStudentAsync(int id)
         {
             var enrollment = await _context.Enrollments.FindAsync(id);

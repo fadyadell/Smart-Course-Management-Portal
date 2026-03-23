@@ -1,10 +1,13 @@
-using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SmartCourseManagement.API.Models
 {
+    /// <summary>
+    /// Represents a course. One-to-Many with InstructorProfile (instructor teaches many courses).
+    /// Many-to-Many with User(Student) via the Enrollment junction entity.
+    /// </summary>
     public class Course
     {
         [Key]
@@ -20,13 +23,14 @@ namespace SmartCourseManagement.API.Models
         [Range(1, 10)]
         public int Credits { get; set; }
 
+        // FK to InstructorProfile
         [Required]
         public int InstructorId { get; set; }
 
         [ForeignKey("InstructorId")]
-        public SmartCourseManagement.API.Models.InstructorProfile Instructor { get; set; }
+        public InstructorProfile Instructor { get; set; }
 
-        // Navigation Properties
-        public ICollection<SmartCourseManagement.API.Models.Enrollment> Enrollments { get; set; } = new List<SmartCourseManagement.API.Models.Enrollment>();
+        // Many-to-Many (via Enrollment junction): Many students enroll in this course
+        public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
     }
 }

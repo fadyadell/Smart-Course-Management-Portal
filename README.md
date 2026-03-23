@@ -1,55 +1,74 @@
-# Smart Course Management Portal
+# Smart Course Management System
 
-A modern, full-stack application built with **ASP.NET Core Web API** and a **responsive Vanilla HTML/CSS/JS frontend**. This portal allows administrators, instructors, and students to manage and interact with educational courses efficiently.
+A complete ASP.NET Core Web API and Frontend project for managing courses, instructors, students, and enrollments.
 
-## Technologies Used
+## 🚀 Features
 
-- **Backend**: 
-  - **ASP.NET Core 10.0 Web API**: Core framework for building RESTful services.
-  - **Entity Framework Core**: ORM for database operations and migrations.
-  - **SQL Server**: Relational database (using LocalDB).
-  - **JWT Authentication**: Secure stateless authentication using JSON Web Tokens.
-  - **BCrypt.Net**: Industry-standard password hashing.
-  - **Swagger/OpenAPI**: API documentation and testing interface.
-  - **LINQ**: Optimized data querying with `Select()` projections and `AsNoTracking()`.
+### Backend (ASP.NET Core 10 Web API)
+- **Entity Relationships**: Full implementation of One-to-One, One-to-Many, and Many-to-Many relationships using EF Core Fluent API.
+- **Service Layer**: Decoupled business logic with Dependency Injection (5+ services).
+- **JWT Authentication**: Secure stateless authentication with role-based claims.
+- **Role-Based Authorization**: Policies for Admin, Instructor, and Student.
+- **LINQ Optimization**: Performance-tuned queries using `AsNoTracking()` and `Select()` projections.
+- **Swagger Documentation**: Interactive API testing with JWT Bearer support.
 
-- **Frontend**:
-  - **Vanilla HTML5 & CSS3**: Clean, modern UI with Glassmorphism and responsive design.
-  - **Modern JavaScript (ES6+)**: Dynamic content rendering using the `Fetch API`.
-  - **Google Fonts (Inter)**: Premium typography for professional aesthetics.
+### Frontend (Vanilla HTML5/CSS3/JS)
+- **Premium UI**: Modern dark-mode design with glassmorphism and micro-animations.
+- **SPA Architecture**: Smooth navigation without page reloads.
+- **JWT Integration**: Automatic token management and secure API fetch wrapper.
+- **Dynamic Dashboard**: Personalized view based on user roles.
 
-## How to Run the Project
+## 🛠️ Setup & Installation
 
-### Prerequisites
-- .NET 10 SDK
-- SQL Server LocalDB (standard with Visual Studio/SDK installation)
-
-### Backend Setup
-1. Open a terminal in `./SmartCourseManagement.API`.
-2. Run database migrations:
+1. **Clone the repository**:
    ```bash
+   git clone [repository-url]
+   cd Smart-Course-Management-Portal
+   ```
+
+2. **Database Setup**:
+   The project uses SQL Server LocalDB. Run the migrations to create the database:
+   ```bash
+   cd SmartCourseManagement.API
    dotnet ef database update
    ```
-3. Start the API:
+
+3. **Run the Application**:
    ```bash
    dotnet run
    ```
-4. Note the URL (e.g., `https://localhost:7153`) and update it in `./SmartCourseManagement.Frontend/js/api.js` if necessary.
+   - **Frontend/Swagger**: [http://localhost:5202](http://localhost:5202)
+   - **API Swagger Documentation**: [http://localhost:5202/swagger](http://localhost:5202/swagger)
 
-### Frontend Setup
-1. Simply open `./SmartCourseManagement.Frontend/login.html` in any modern web browser.
-2. Register a new account as a Student, Instructor, or Admin.
+## 🔑 Authentication Flow
 
----
+1. **Register**: Navigate to the Register page and create an account as a "Student" or "Instructor".
+2. **Login**: Sign in with your credentials to receive a JWT token.
+3. **Explore**:
+   - **Students**: Browse and enroll in courses.
+   - **Instructors/Admins**: Access course management tools.
 
-## Technical Discussion: HTTP-only Cookies
+## 📂 Project Structure
 
-### Why use HTTP-only Cookies for Authentication?
+- `SmartCourseManagement.API/`
+  - `Controllers/`: API endpoints.
+  - `Services/`: Business logic implementations.
+  - `Data/`: DBContext and Migrations.
+  - `DTOs/`: Data Transfer Objects for API contracts.
+  - `Models/`: EF Core Entity models.
+  - `wwwroot/`: Frontend static files (HTML, CSS, JS).
 
-In many modern web applications, **HTTP-only cookies** are preferred over local storage for storing sensitive authentication tokens (like JWTs) for the following reasons:
+## ✅ Requirements Checklist
 
-1. **Protection against XSS (Cross-Site Scripting)**: Cookies with the `HttpOnly` flag cannot be accessed by client-side JavaScript. This prevents malicious scripts from stealing the session token if the application has an XSS vulnerability.
-2. **Built-in Browser Security**: Browsers automatically include cookies in requests to the originating domain, allowing for more secure and standardized state management.
-3. **Defense in Depth**: While researchers often debate storage methods, `HttpOnly` combined with `SameSite=Strict` and `Secure` flags provides a robust multi-layered defense against both XSS and CSRF (Cross-Site Request Forgery).
-
-*Note: In this specific implementation, for simplicity in a decoupled assignment environment, LocalStorage is used, but industry-standard production apps typically adopt HTTP-only cookies.*
+- [x] One-to-One relationship (User <-> InstructorProfile)
+- [x] One-to-Many relationship (InstructorProfile <-> Course)
+- [x] Many-to-Many relationship (Student <-> Course via Enrollment)
+- [x] Service Layer + Dependency Injection
+- [x] DTOs for Create/Update/Read operations
+- [x] DTO Validation ([Required], [EmailAddress], etc.)
+- [x] JWT Authentication
+- [x] Role-Based Authorization ([Authorize(Policy = "...")])
+- [x] LINQ Optimization (Select + AsNoTracking)
+- [x] EF Core Migrations
+- [x] Swagger UI with JWT Support
+- [x] Premium Frontend UI
