@@ -3,80 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Smart Course Portal</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Admin – Smart Course Management Portal</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/animations.css">
 </head>
 <body>
-    <nav class="navbar glass">
-        <div class="nav-logo">SmartPortal</div>
-        <ul class="nav-links">
-            <li><a href="dashboard.html">Dashboard</a></li>
-            <li><a href="courses.html">Courses</a></li>
-            <li><a href="admin.html">Admin</a></li>
-            <li><a href="#" onclick="api.auth.logout()">Logout</a></li>
-        </ul>
-    </nav>
 
-    <div class="container">
-        <h1>Admin Control Panel</h1>
-        
-        <div class="dashboard-grid">
-            <div class="course-card glass">
-                <h3>Create New Course</h3>
-                <form id="createCourseForm">
-                    <div class="form-group">
-                        <label>Course Title</label>
-                        <input type="text" id="title" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Description</label>
-                        <input type="text" id="desc" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Credits</label>
-                        <input type="number" id="credits" min="1" max="10" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Instructor ID</label>
-                        <input type="number" id="instrId" required>
-                    </div>
-                    <button type="submit">Create Course</button>
-                </form>
-            </div>
+<!-- Navbar -->
+<nav class="navbar">
+    <a href="dashboard.html" class="navbar-brand"><i class="fas fa-graduation-cap"></i> SmartCourse</a>
+    <ul class="nav-links" id="nav-links">
+        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+        <li><a href="courses.html"><i class="fas fa-book"></i> Courses</a></li>
+        <li><a href="admin.html" class="active"><i class="fas fa-cog"></i> Admin</a></li>
+        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+    </ul>
+    <div class="navbar-spacer"></div>
+    <div class="navbar-user">
+        <div class="user-avatar" id="user-avatar-btn" onclick="toggleDropdown()">A</div>
+        <div class="user-dropdown" id="user-dropdown">
+            <a href="profile.html"><i class="fas fa-user"></i> My Profile</a>
+            <hr>
+            <button onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </div>
+    <button class="navbar-toggle" id="navbar-toggle"><i class="fas fa-bars"></i></button>
+</nav>
 
-            <div class="course-card glass">
-                <h3>System Statistics</h3>
-                <div id="stats" style="margin-top: 1rem;">
-                    <p>Loading stats...</p>
-                </div>
-            </div>
+<div class="page-wrapper">
+<div class="main-content">
+
+    <div class="page-header">
+        <div><h1><i class="fas fa-users-cog me-2"></i>Admin Panel</h1><p>Manage users, courses, and platform settings.</p></div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4" id="admin-stats">
+        <div class="col-6 col-md-3">
+            <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-users"></i></div>
+                <div><div class="stat-label">Total Users</div><div class="stat-value" id="stat-users">–</div></div></div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card"><div class="stat-icon green"><i class="fas fa-book"></i></div>
+                <div><div class="stat-label">Total Courses</div><div class="stat-value" id="stat-courses">–</div></div></div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-user-graduate"></i></div>
+                <div><div class="stat-label">Students</div><div class="stat-value" id="stat-students">–</div></div></div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card"><div class="stat-icon red"><i class="fas fa-chalkboard-teacher"></i></div>
+                <div><div class="stat-label">Instructors</div><div class="stat-value" id="stat-instructors">–</div></div></div>
         </div>
     </div>
 
-    <script src="js/api.js"></script>
-    <script>
-        const user = api.auth.getUser();
-        if (!user || user.role !== 'Admin') {
-            window.location.href = 'dashboard.html';
-        }
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" id="admin-tabs">
+        <li class="nav-item"><button class="nav-link active" data-tab="users" onclick="switchTab('users')"><i class="fas fa-users me-2"></i>Users</button></li>
+        <li class="nav-item"><button class="nav-link" data-tab="courses" onclick="switchTab('courses')"><i class="fas fa-book me-2"></i>Courses</button></li>
+    </ul>
 
-        document.getElementById('createCourseForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-                title: document.getElementById('title').value,
-                description: document.getElementById('desc').value,
-                credits: parseInt(document.getElementById('credits').value),
-                instructorId: parseInt(document.getElementById('instrId').value)
-            };
+    <!-- Users Tab -->
+    <div id="tab-users">
+        <div class="filter-bar mb-3">
+            <div class="search-wrapper flex-grow-1" style="max-width:360px;">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="user-search" class="form-control" placeholder="Search users...">
+            </div>
+            <select id="user-role-filter" class="form-select" style="max-width:160px;">
+                <option value="">All Roles</option>
+                <option value="Student">Student</option>
+                <option value="Instructor">Instructor</option>
+                <option value="Admin">Admin</option>
+            </select>
+        </div>
+        <div class="table-wrapper">
+            <table class="table" id="users-table">
+                <thead>
+                    <tr>
+                        <th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-tbody">
+                    <tr><td colspan="5" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-center mt-3" id="users-pagination"></div>
+    </div>
 
-            try {
-                await api.courses.create(data);
-                alert('Course created successfully!');
-                e.target.reset();
-            } catch (err) {
-                alert(err.message);
-            }
-        });
-    </script>
+    <!-- Courses Tab -->
+    <div id="tab-courses" style="display:none;">
+        <div class="filter-bar mb-3">
+            <div class="search-wrapper flex-grow-1" style="max-width:360px;">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="course-search-admin" class="form-control" placeholder="Search courses...">
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#adminCreateCourseModal">
+                <i class="fas fa-plus me-1"></i>New Course
+            </button>
+        </div>
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr><th>#</th><th>Title</th><th>Credits</th><th>Instructor</th><th>Enrolled</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="courses-tbody">
+                    <tr><td colspan="6" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-center mt-3" id="courses-pagination-admin"></div>
+    </div>
+
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title"><i class="fas fa-user-edit me-2"></i>Edit User</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <form id="edit-user-form">
+            <input type="hidden" id="edit-user-id">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" id="edit-user-name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="edit-user-email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <select id="edit-user-role" class="form-select">
+                        <option value="Student">Student</option>
+                        <option value="Instructor">Instructor</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+<!-- Admin Create Course Modal -->
+<div class="modal fade" id="adminCreateCourseModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title"><i class="fas fa-plus me-2"></i>Create Course</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <form id="admin-create-course-form">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Title *</label>
+                    <input type="text" id="admin-course-title" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="admin-course-desc" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Credits *</label>
+                    <input type="number" id="admin-course-credits" class="form-control" min="1" max="6" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Instructor</label>
+                    <select id="admin-course-instructor" class="form-select">
+                        <option value="">Select Instructor</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Create</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+<!-- Edit Course Modal (Admin) -->
+<div class="modal fade" id="adminEditCourseModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Course</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <form id="admin-edit-course-form">
+            <input type="hidden" id="admin-edit-course-id">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Title *</label>
+                    <input type="text" id="admin-edit-title" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="admin-edit-desc" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Credits *</label>
+                    <input type="number" id="admin-edit-credits" class="form-control" min="1" max="6" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+<footer class="footer"><p>&copy; 2025 SmartCourse Management Portal</p></footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/helpers/validators.js"></script>
+<script src="js/helpers/formatters.js"></script>
+<script>
+    function toggleDropdown() { document.getElementById('user-dropdown').classList.toggle('open'); }
+    document.addEventListener('click', function(e) {
+        const dd = document.getElementById('user-dropdown');
+        if (!dd) return;
+        if (!e.target.closest('.navbar-user')) dd.classList.remove('open');
+    });
+    document.getElementById('navbar-toggle').addEventListener('click', function() {
+        document.getElementById('nav-links').classList.toggle('open');
+    });
+    const _u = Storage.getUser();
+    if (_u) { const av = document.getElementById('user-avatar-btn'); if (av) av.textContent = _u.name ? _u.name.charAt(0).toUpperCase() : 'A'; }
+
+    function switchTab(tab) {
+        document.querySelectorAll('#admin-tabs .nav-link').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
+        document.getElementById('tab-users').style.display   = tab === 'users'   ? '' : 'none';
+        document.getElementById('tab-courses').style.display = tab === 'courses' ? '' : 'none';
+    }
+</script>
+<script src="js/pages/admin.js"></script>
 </body>
 </html>

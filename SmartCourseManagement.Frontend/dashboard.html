@@ -3,100 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Smart Course Portal</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Dashboard – Smart Course Management Portal</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/animations.css">
 </head>
 <body>
-    <nav class="navbar glass">
-        <div class="nav-logo">SmartPortal</div>
-        <ul class="nav-links">
-            <li><a href="dashboard.html">Dashboard</a></li>
-            <li><a href="courses.html">Courses</a></li>
-            <li id="adminLink" style="display: none;"><a href="admin.html">Admin</a></li>
-            <li id="instructorLink" style="display: none;"><a href="instructor.html">Instructor</a></li>
-            <li><a href="#" onclick="api.auth.logout()">Logout</a></li>
-        </ul>
-    </nav>
 
-    <div class="container">
-        <header style="margin-bottom: 2rem;">
-            <h1 id="welcomeTitle">Welcome, User</h1>
-            <p id="roleBadge" class="course-badge" style="margin-top: 0.5rem;"></p>
-        </header>
+<!-- Navbar -->
+<nav class="navbar">
+    <a href="dashboard.html" class="navbar-brand"><i class="fas fa-graduation-cap"></i> SmartCourse</a>
+    <ul class="nav-links" id="nav-links">
+        <li><a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+        <li><a href="courses.html"><i class="fas fa-book"></i> Courses</a></li>
+        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+        <li data-role="Admin"><a href="admin.html"><i class="fas fa-cog"></i> Admin</a></li>
+    </ul>
+    <div class="navbar-spacer"></div>
+    <div class="navbar-user">
+        <div class="user-avatar" id="user-avatar-btn" onclick="toggleDropdown()">?</div>
+        <div class="user-info d-none d-md-flex">
+            <span class="user-name" id="navbar-username">Loading...</span>
+            <span id="navbar-role"></span>
+        </div>
+        <div class="user-dropdown" id="user-dropdown">
+            <a href="profile.html"><i class="fas fa-user"></i> My Profile</a>
+            <a href="courses.html"><i class="fas fa-book"></i> Browse Courses</a>
+            <hr>
+            <button onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </div>
+    <button class="navbar-toggle" id="navbar-toggle"><i class="fas fa-bars"></i></button>
+</nav>
 
-        <section id="studentSection" style="display: none;">
-            <h2>My Enrolled Courses</h2>
-            <div id="enrolledCourses" class="dashboard-grid">
-                <!-- Dynamic content -->
-            </div>
-        </section>
+<div class="page-wrapper">
+<div class="main-content">
 
-        <section id="allCoursesSection">
-            <h2 style="margin-top: 2rem;">Available Courses</h2>
-            <div id="allCourses" class="dashboard-grid">
-                <!-- Dynamic content -->
-            </div>
-        </section>
+    <!-- Page Header -->
+    <div class="page-header">
+        <div>
+            <h1>Welcome back, <span id="welcome-name">...</span>! 👋</h1>
+            <p>Here's what's happening with your courses today.</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="courses.html" class="btn btn-primary"><i class="fas fa-search me-2"></i>Browse Courses</a>
+        </div>
     </div>
 
-    <script src="js/api.js"></script>
-    <script>
-        if (!api.auth.isAuthenticated()) {
-            window.location.href = 'login.html';
-        }
+    <!-- ===== STUDENT SECTION ===== -->
+    <div data-role="Student">
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fas fa-book-open"></i></div>
+                    <div>
+                        <div class="stat-label">Enrolled Courses</div>
+                        <div class="stat-value" id="enrolled-count">–</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+                    <div>
+                        <div class="stat-label">Active This Week</div>
+                        <div class="stat-value">–</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        const user = api.auth.getUser();
-        document.getElementById('welcomeTitle').innerText = `Welcome, ${user.name}`;
-        document.getElementById('roleBadge').innerText = user.role;
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h4 class="mb-0"><i class="fas fa-book-open me-2 text-primary"></i>My Enrolled Courses</h4>
+            <a href="courses.html" class="btn btn-outline-primary btn-sm"><i class="fas fa-plus me-1"></i>Find More</a>
+        </div>
+        <div class="row g-3" id="student-courses">
+            <div class="col-12 text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading courses...</div>
+        </div>
+    </div>
 
-        // Role-based visibility
-        if (user.role === 'Admin') document.getElementById('adminLink').style.display = 'block';
-        if (user.role === 'Instructor') document.getElementById('instructorLink').style.display = 'block';
-        if (user.role === 'Student') document.getElementById('studentSection').style.display = 'block';
+    <!-- ===== INSTRUCTOR SECTION ===== -->
+    <div data-role="Instructor">
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fas fa-chalkboard"></i></div>
+                    <div>
+                        <div class="stat-label">My Courses</div>
+                        <div class="stat-value" id="my-courses-count">–</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        async function loadContent() {
-            try {
-                // Load all courses
-                const courses = await api.courses.getAll();
-                const coursesList = document.getElementById('allCourses');
-                coursesList.innerHTML = courses.map(c => `
-                    <div class="course-card glass">
-                        <span class="course-badge">${c.credits} Credits</span>
-                        <h3>${c.title}</h3>
-                        <p style="color: var(--text-secondary); font-size: 0.875rem;">${c.description}</p>
-                        <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 0.875rem;">By ${c.instructorName}</span>
-                            ${user.role === 'Student' ? `<button onclick="enroll(${c.id})" style="width: auto; padding: 0.5rem 1rem;">Enroll</button>` : ''}
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h4 class="mb-0"><i class="fas fa-chalkboard-teacher me-2 text-primary"></i>My Courses</h4>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createInstructorCourseModal">
+                <i class="fas fa-plus me-1"></i>New Course
+            </button>
+        </div>
+        <div class="row g-3" id="instructor-courses">
+            <div class="col-12 text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</div>
+        </div>
+
+        <!-- Create Course Modal (Instructor) -->
+        <div class="modal fade" id="createInstructorCourseModal" tabindex="-1">
+            <div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Create New Course</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="create-course-form">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label class="form-label">Course Title *</label>
+                            <input type="text" id="course-title" class="form-control" placeholder="e.g. Introduction to Python" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Description</label>
+                            <textarea id="course-description" class="form-control" rows="3" placeholder="Describe the course..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Credits *</label>
+                            <input type="number" id="course-credits" class="form-control" min="1" max="6" placeholder="e.g. 3" required>
                         </div>
                     </div>
-                `).join('');
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Create Course</button>
+                    </div>
+                </form>
+            </div></div>
+        </div>
+    </div>
 
-                if (user.role === 'Student') {
-                    const enrollments = await api.enrollments.getMyEnrollments();
-                    const enrolledList = document.getElementById('enrolledCourses');
-                    enrolledList.innerHTML = enrollments.length ? enrollments.map(e => `
-                        <div class="course-card glass" style="border-left: 4px solid var(--primary-color);">
-                            <h3>${e.courseTitle}</h3>
-                            <p style="color: var(--text-secondary); font-size: 0.875rem;">Enrolled on: ${new Date(e.enrollmentDate).toLocaleDateString()}</p>
-                        </div>
-                    `).join('') : '<p style="color: var(--text-secondary);">You are not enrolled in any courses yet.</p>';
-                }
-            } catch (err) {
-                console.error(err);
+    <!-- ===== ADMIN SECTION ===== -->
+    <div data-role="Admin">
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fas fa-book"></i></div>
+                    <div>
+                        <div class="stat-label">Total Courses</div>
+                        <div class="stat-value" id="total-courses">–</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fas fa-users"></i></div>
+                    <div>
+                        <div class="stat-label">Total Users</div>
+                        <div class="stat-value" id="total-users">–</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex gap-3 flex-wrap">
+            <a href="courses.html" class="btn btn-primary"><i class="fas fa-book me-2"></i>Manage Courses</a>
+            <a href="admin.html"   class="btn btn-secondary"><i class="fas fa-users-cog me-2"></i>Manage Users</a>
+        </div>
+    </div>
+
+</div>
+
+<!-- Footer -->
+<footer class="footer"><p>&copy; 2025 SmartCourse Management Portal</p></footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/helpers/validators.js"></script>
+<script src="js/helpers/formatters.js"></script>
+<script>
+    function toggleDropdown() {
+        document.getElementById('user-dropdown').classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+        const dd = document.getElementById('user-dropdown');
+        if (!dd) return;
+        if (!e.target.closest('.navbar-user')) dd.classList.remove('open');
+    });
+    document.getElementById('navbar-toggle').addEventListener('click', function() {
+        document.getElementById('nav-links').classList.toggle('open');
+    });
+    // Set avatar initials
+    const _u = Storage.getUser();
+    if (_u) {
+        const av = document.getElementById('user-avatar-btn');
+        if (av) av.textContent = _u.name ? _u.name.charAt(0).toUpperCase() : '?';
+        // Show admin nav link if admin
+        document.querySelectorAll('[data-role]').forEach(el => {
+            if (el.tagName === 'LI') {
+                const allowed = el.dataset.role.split(',').map(r => r.trim());
+                el.style.display = allowed.includes(_u.role) ? '' : 'none';
             }
-        }
-
-        async function enroll(courseId) {
-            try {
-                await api.enrollments.enroll(courseId);
-                alert('Successfully enrolled!');
-                loadContent();
-            } catch (err) {
-                alert(err.message);
-            }
-        }
-
-        loadContent();
-    </script>
+        });
+    }
+</script>
+<script src="js/pages/dashboard.js"></script>
 </body>
 </html>

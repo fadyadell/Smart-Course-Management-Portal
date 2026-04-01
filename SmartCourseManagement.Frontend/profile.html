@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile – Smart Course Management Portal</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <a href="dashboard.html" class="navbar-brand"><i class="fas fa-graduation-cap"></i> SmartCourse</a>
+    <ul class="nav-links" id="nav-links">
+        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+        <li><a href="courses.html"><i class="fas fa-book"></i> Courses</a></li>
+        <li><a href="profile.html" class="active"><i class="fas fa-user"></i> Profile</a></li>
+    </ul>
+    <div class="navbar-spacer"></div>
+    <button class="navbar-toggle" id="navbar-toggle"><i class="fas fa-bars"></i></button>
+</nav>
+
+<div class="page-wrapper">
+<div class="main-content" style="max-width:800px;">
+
+    <div class="page-header">
+        <h1><i class="fas fa-user me-2"></i>My Profile</h1>
+    </div>
+
+    <div class="row g-4">
+        <!-- User Info Card -->
+        <div class="col-md-5">
+            <div class="card text-center">
+                <div class="card-body py-4">
+                    <div class="profile-avatar" id="profile-avatar">?</div>
+                    <h4 id="profile-name" class="mb-1">Loading...</h4>
+                    <p id="profile-email" class="text-muted mb-2">—</p>
+                    <div id="profile-role-badge"></div>
+                    <hr>
+                    <p class="text-muted small mb-0">Role: <strong id="profile-role">—</strong></p>
+                </div>
+                <div class="card-footer">
+                    <button id="logout-btn" class="btn btn-danger btn-block">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enrolled Courses -->
+        <div class="col-md-7" id="enrolled-section" style="display:none;">
+            <div class="card">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <span><i class="fas fa-book-open me-2"></i>Enrolled Courses</span>
+                    <a href="courses.html" class="btn btn-sm btn-primary"><i class="fas fa-plus me-1"></i>Browse</a>
+                </div>
+                <div class="card-body">
+                    <div id="profile-enrolled-courses">
+                        <p class="text-muted text-center py-3"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Non-student info -->
+        <div class="col-md-7" id="non-student-section">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-link me-2"></i>Quick Links</div>
+                <div class="card-body d-flex flex-column gap-3">
+                    <a href="dashboard.html" class="btn btn-outline-primary"><i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard</a>
+                    <a href="courses.html"   class="btn btn-outline-secondary"><i class="fas fa-book me-2"></i>Browse Courses</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+<footer class="footer"><p>&copy; 2025 SmartCourse Management Portal</p></footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/helpers/validators.js"></script>
+<script src="js/helpers/formatters.js"></script>
+<script>
+    document.getElementById('navbar-toggle').addEventListener('click', function() {
+        document.getElementById('nav-links').classList.toggle('open');
+    });
+    // Set avatar initial
+    const _u = Storage.getUser();
+    if (_u) {
+        const av = document.getElementById('profile-avatar');
+        if (av) av.textContent = _u.name ? _u.name.charAt(0).toUpperCase() : '?';
+        // Show/hide non-student section
+        const ns = document.getElementById('non-student-section');
+        if (ns) ns.style.display = _u.role === 'Student' ? 'none' : '';
+    }
+</script>
+<script src="js/pages/profile.js"></script>
+</body>
+</html>

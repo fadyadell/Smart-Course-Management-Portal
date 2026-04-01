@@ -1,0 +1,34 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/publish/
+*.user
+
+# Logs
+logs/
+*.log
+
+# Secrets / local config overrides
+appsettings.*.local.json
+*.local.json
+
+# IDE
+.vs/
+.idea/
+*.suo
+*.ncrunch*
+*.DotSettings.user
+
+# Node / npm (if ever used)
+node_modules/
+
+# macOS
+.DS_Store
+
+# Test results
+TestResults/
+coverage/
+
+# NuGet
+*.nupkg
+.nuget/

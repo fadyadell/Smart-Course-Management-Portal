@@ -3,83 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Smart Course Portal</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Register – Smart Course Management Portal</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/animations.css">
 </head>
-<body>
-    <div class="auth-wrapper">
-        <div class="auth-card glass">
-            <h1 class="auth-title">Create Account</h1>
-            <p class="auth-subtitle">Join the smart learning portal</p>
-            
-            <form id="registerForm">
-                <div class="form-group">
-                    <label for="name">Full Name</label>
-                    <input type="text" id="name" required placeholder="John Doe">
-                </div>
+<body class="auth-page">
 
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" required placeholder="name@example.com">
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" required placeholder="••••••••" minlength="6">
-                </div>
-
-                <div class="form-group">
-                    <label for="role">I am a...</label>
-                    <select id="role" required>
-                        <option value="Student">Student</option>
-                        <option value="Instructor">Instructor</option>
-                        <option value="Admin">Admin</option>
-                    </select>
-                </div>
-                
-                <button type="submit" id="regBtn">Register</button>
-            </form>
-            
-            <div class="auth-footer">
-                Already have an account? <a href="login.html">Login</a>
-            </div>
-            <div id="message" style="margin-top: 1rem; text-align: center; color: #ef4444;"></div>
-        </div>
+<div class="auth-card" style="max-width:500px;">
+    <div class="auth-logo">
+        <div class="logo-icon"><i class="fas fa-user-plus"></i></div>
+        <h2>Create Account</h2>
+        <p class="subtitle">Join SmartCourse today</p>
     </div>
 
-    <script src="js/api.js"></script>
-    <script>
-        if (api.auth.isAuthenticated()) {
-            window.location.href = 'dashboard.html';
-        }
+    <form id="register-form" novalidate>
+        <div class="form-group">
+            <label class="form-label" for="name">Full Name</label>
+            <div class="input-group">
+                <i class="fas fa-user input-icon"></i>
+                <input type="text" id="name" class="form-control" placeholder="Jane Smith" autocomplete="name" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="email">Email Address</label>
+            <div class="input-group">
+                <i class="fas fa-envelope input-icon"></i>
+                <input type="email" id="email" class="form-control" placeholder="you@example.com" autocomplete="email" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <div class="input-group">
+                <i class="fas fa-lock input-icon"></i>
+                <input type="password" id="password" class="form-control" placeholder="Min. 6 characters" autocomplete="new-password" required>
+                <button type="button" class="toggle-password" onclick="togglePwd('password', this)" tabindex="-1">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+            <div class="strength-wrapper">
+                <div class="strength-track"><div class="strength-bar" id="strength-bar"></div></div>
+                <div class="strength-label" id="strength-text"></div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="confirm-password">Confirm Password</label>
+            <div class="input-group">
+                <i class="fas fa-lock input-icon"></i>
+                <input type="password" id="confirm-password" class="form-control" placeholder="Repeat password" autocomplete="new-password" required>
+                <button type="button" class="toggle-password" onclick="togglePwd('confirm-password', this)" tabindex="-1">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">I am a…</label>
+            <div class="role-options">
+                <div class="role-option">
+                    <input type="radio" id="role-student" name="role" value="Student" checked>
+                    <label for="role-student"><i class="fas fa-user-graduate"></i>Student</label>
+                </div>
+                <div class="role-option">
+                    <input type="radio" id="role-instructor" name="role" value="Instructor">
+                    <label for="role-instructor"><i class="fas fa-chalkboard-teacher"></i>Instructor</label>
+                </div>
+                <div class="role-option">
+                    <input type="radio" id="role-admin" name="role" value="Admin">
+                    <label for="role-admin"><i class="fas fa-user-shield"></i>Admin</label>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg mt-1">
+            <i class="fas fa-user-plus me-2"></i>Create Account
+        </button>
+    </form>
 
-        document.getElementById('registerForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const userData = {
-                name: document.getElementById('name').value,
-                email: document.getElementById('email').value,
-                password: document.getElementById('password').value,
-                role: document.getElementById('role').value
-            };
-            const btn = document.getElementById('regBtn');
-            const msg = document.getElementById('message');
+    <p class="text-center mt-3" style="font-size:.875rem; color:var(--text-muted);">
+        Already have an account? <a href="login.html" style="font-weight:600;">Sign in</a>
+    </p>
+    <p class="text-center mt-2" style="font-size:.875rem;">
+        <a href="index.html" style="color:var(--text-muted);"><i class="fas fa-arrow-left me-1"></i>Back to Home</a>
+    </p>
+</div>
 
-            btn.disabled = true;
-            btn.innerText = 'Creating account...';
-            msg.innerText = '';
-            msg.style.color = '#ef4444';
-
-            try {
-                await api.auth.register(userData);
-                msg.style.color = '#10b981';
-                msg.innerText = 'Account created! Redirecting to login...';
-                setTimeout(() => window.location.href = 'login.html', 2000);
-            } catch (err) {
-                msg.innerText = err.message;
-                btn.disabled = false;
-                btn.innerText = 'Register';
-            }
-        });
-    </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/helpers/validators.js"></script>
+<script src="js/helpers/formatters.js"></script>
+<script>
+    if (Auth.isAuthenticated()) window.location.href = 'dashboard.html';
+    function togglePwd(id, btn) {
+        const input = document.getElementById(id);
+        const isText = input.type === 'text';
+        input.type = isText ? 'password' : 'text';
+        btn.querySelector('i').className = isText ? 'fas fa-eye' : 'fas fa-eye-slash';
+    }
+</script>
+<script src="js/pages/register.js"></script>
 </body>
 </html>
