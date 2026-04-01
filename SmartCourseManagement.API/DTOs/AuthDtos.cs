@@ -50,6 +50,14 @@ namespace SmartCourseManagement.API.DTOs
     public class AuthResponseDto
     {
         public string Token { get; set; }
+        public string RefreshToken { get; set; }
         public UserReadDto User { get; set; }
+    }
+
+    // DTO for refresh token request
+    public class RefreshTokenRequestDto
+    {
+        [Required(ErrorMessage = "Refresh token is required")]
+        public string RefreshToken { get; set; }
     }
 }

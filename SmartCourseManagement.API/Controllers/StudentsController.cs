@@ -11,7 +11,7 @@ namespace SmartCourseManagement.API.Controllers
     /// Students are users with Role = "Student".
     /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [Authorize(Roles = "Admin,Instructor")]
     public class StudentsController : ControllerBase
     {

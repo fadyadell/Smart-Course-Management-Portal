@@ -27,6 +27,7 @@ namespace SmartCourseManagement.API.Services
         {
             return await _context.Courses
                 .AsNoTracking() // Read-only: no change tracking needed
+                .Where(c => !c.IsDeleted)
                 .Select(c => new CourseReadDto
                 {
                     Id = c.Id,
@@ -39,12 +40,65 @@ namespace SmartCourseManagement.API.Services
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// Returns a paginated, filtered, and sorted list of courses.
+        /// Supports search by title/description and sorting by title, credits, or instructor.
+        /// </summary>
+        public async Task<PagedResponse<CourseReadDto>> GetCoursesAsync(PagedRequest request)
+        {
+            var query = _context.Courses
+                .AsNoTracking()
+                .Where(c => !c.IsDeleted);
+
+            // Search filter
+            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+            {
+                var term = request.SearchTerm.ToLower();
+                query = query.Where(c =>
+                    c.Title.ToLower().Contains(term) ||
+                    (c.Description != null && c.Description.ToLower().Contains(term)));
+            }
+
+            // Additional filter by credits
+            if (!string.IsNullOrWhiteSpace(request.Filter) && int.TryParse(request.Filter, out var credits))
+            {
+                query = query.Where(c => c.Credits == credits);
+            }
+
+            // Sorting
+            query = request.SortBy?.ToLower() switch
+            {
+                "title" => query.OrderBy(c => c.Title),
+                "credits" => query.OrderBy(c => c.Credits),
+                "credits_desc" => query.OrderByDescending(c => c.Credits),
+                _ => query.OrderBy(c => c.Id)
+            };
+
+            var total = await query.CountAsync();
+
+            var data = await query
+                .Skip((request.Page - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .Select(c => new CourseReadDto
+                {
+                    Id = c.Id,
+                    Title = c.Title,
+                    Description = c.Description,
+                    Credits = c.Credits,
+                    InstructorId = c.InstructorId,
+                    InstructorName = c.Instructor.User.Name
+                })
+                .ToListAsync();
+
+            return new PagedResponse<CourseReadDto>(data, total, request.Page, request.PageSize);
+        }
+
         /// <summary>Returns one course by ID using FirstOrDefaultAsync() + AsNoTracking().</summary>
         public async Task<CourseReadDto> GetCourseByIdAsync(int id)
         {
             return await _context.Courses
                 .AsNoTracking()
-                .Where(c => c.Id == id)
+                .Where(c => c.Id == id && !c.IsDeleted)
                 .Select(c => new CourseReadDto
                 {
                     Id = c.Id,
@@ -79,7 +133,7 @@ namespace SmartCourseManagement.API.Services
         public async Task<bool> UpdateCourseAsync(int id, CourseUpdateDto courseDto)
         {
             var course = await _context.Courses.FindAsync(id);
-            if (course == null) return false;
+            if (course == null || course.IsDeleted) return false;
 
             // Only update provided fields
             course.Title = courseDto.Title ?? course.Title;
@@ -91,13 +145,14 @@ namespace SmartCourseManagement.API.Services
             return true;
         }
 
-        /// <summary>Deletes a course by ID. Returns false if not found.</summary>
+        /// <summary>Soft-deletes a course by ID. Returns false if not found.</summary>
         public async Task<bool> DeleteCourseAsync(int id)
         {
             var course = await _context.Courses.FindAsync(id);
-            if (course == null) return false;
+            if (course == null || course.IsDeleted) return false;
 
-            _context.Courses.Remove(course);
+            // Soft delete: mark as deleted instead of removing from database
+            course.IsDeleted = true;
             await _context.SaveChangesAsync();
             return true;
         }

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Enrollments – Smart Course Management Portal</title>
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container nav-content">
+            <div class="logo"><i class="fas fa-university"></i> SmartCourse</div>
+            <nav class="nav-links">
+                <a href="/dashboard.html">Dashboard</a>
+                <a href="/courses.html">Courses</a>
+                <a href="/my-enrollments.html" class="active">My Enrollments</a>
+                <a href="/profile.html">Profile</a>
+                <button class="btn btn-outline btn-sm" onclick="Auth.logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding-top:2rem;padding-bottom:4rem;">
+        <h1 class="section-title mb-6"><i class="fas fa-book-open" style="color:var(--primary-color)"></i> My Enrollments</h1>
+
+        <div class="glass-card">
+            <div id="enrollments-list"><div class="spinner"></div></div>
+        </div>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        const user = Auth.requireAuth(['Student']);
+        if (user) loadEnrollments();
+
+        async function loadEnrollments() {
+            const el = document.getElementById('enrollments-list');
+            try {
+                const enrollments = await Api.get('/enrollments/my-enrollments');
+                if (!enrollments || !enrollments.length) {
+                    el.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fas fa-book"></i></div>
+                            <p>You are not enrolled in any courses yet.</p>
+                            <a href="/courses.html" class="btn btn-primary mt-4">Browse Courses</a>
+                        </div>`;
+                    return;
+                }
+                el.innerHTML = `
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Course</th>
+                                    <th>Enrolled On</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${enrollments.map((e, idx) => `
+                                    <tr>
+                                        <td>${idx + 1}</td>
+                                        <td>
+                                            <strong>${Utils.escapeHtml(e.courseTitle || 'Course')}</strong>
+                                        </td>
+                                        <td>${Utils.formatDate(e.enrollmentDate)}</td>
+                                        <td>
+                                            <button class="btn btn-danger btn-sm" onclick="unenroll(${e.id})">
+                                                <i class="fas fa-times"></i> Drop Course
+                                            </button>
+                                        </td>
+                                    </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-muted mt-4" style="font-size:0.8rem;">
+                        <i class="fas fa-info-circle"></i> Total: ${enrollments.length} enrollment(s)
+                    </p>`;
+            } catch (err) {
+                el.innerHTML = `<p style="color:var(--error-color)">${Utils.escapeHtml(err.message)}</p>`;
+            }
+        }
+
+        async function unenroll(id) {
+            const confirmed = await UI.confirm('Drop Course', 'Are you sure you want to drop this course?');
+            if (!confirmed) return;
+            try {
+                await Api.delete(`/enrollments/${id}`);
+                UI.toast('Successfully dropped course.', 'success');
+                loadEnrollments();
+            } catch (err) {
+                UI.toast(err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

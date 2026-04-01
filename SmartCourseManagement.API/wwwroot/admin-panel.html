@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel – Smart Course Management Portal</title>
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container nav-content">
+            <div class="logo"><i class="fas fa-university"></i> SmartCourse</div>
+            <nav class="nav-links">
+                <a href="/dashboard.html">Dashboard</a>
+                <a href="/courses.html">Courses</a>
+                <a href="/admin-panel.html" class="active">Admin</a>
+                <a href="/profile.html">Profile</a>
+                <button class="btn btn-outline btn-sm" onclick="Auth.logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding-top:2rem;padding-bottom:4rem;">
+        <h1 class="section-title mb-6"><i class="fas fa-cogs" style="color:var(--primary-color)"></i> Admin Panel</h1>
+
+        <!-- Tabs -->
+        <div style="display:flex;gap:0.5rem;margin-bottom:2rem;border-bottom:1px solid var(--glass-border);padding-bottom:0.5rem;">
+            <button class="btn btn-primary btn-sm tab-btn" data-tab="students" onclick="showTab('students')">
+                <i class="fas fa-users"></i> Students
+            </button>
+            <button class="btn btn-outline btn-sm tab-btn" data-tab="courses" onclick="showTab('courses')">
+                <i class="fas fa-book"></i> Courses
+            </button>
+            <button class="btn btn-outline btn-sm tab-btn" data-tab="instructors" onclick="showTab('instructors')">
+                <i class="fas fa-chalkboard-teacher"></i> Instructors
+            </button>
+        </div>
+
+        <!-- Students Tab -->
+        <div id="tab-students" class="animate-fade-in">
+            <div class="section-header mb-4">
+                <h2 class="section-title">All Students</h2>
+            </div>
+            <div class="glass-card">
+                <div id="students-list"><div class="spinner"></div></div>
+            </div>
+        </div>
+
+        <!-- Courses Tab -->
+        <div id="tab-courses" class="hidden animate-fade-in">
+            <div class="section-header mb-4">
+                <h2 class="section-title">All Courses</h2>
+                <a href="/courses.html" class="btn btn-primary btn-sm">
+                    <i class="fas fa-external-link-alt"></i> Manage in Courses Page
+                </a>
+            </div>
+            <div class="glass-card">
+                <div id="courses-list"><div class="spinner"></div></div>
+            </div>
+        </div>
+
+        <!-- Instructors Tab -->
+        <div id="tab-instructors" class="hidden animate-fade-in">
+            <div class="section-header mb-4">
+                <h2 class="section-title">All Instructors</h2>
+            </div>
+            <div class="glass-card">
+                <div id="instructors-list"><div class="spinner"></div></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        const user = Auth.requireAuth(['Admin']);
+        if (user) loadStudents();
+
+        function showTab(tab) {
+            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = btn.dataset.tab === tab
+                    ? 'btn btn-primary btn-sm tab-btn'
+                    : 'btn btn-outline btn-sm tab-btn';
+            });
+            if (tab === 'students') loadStudents();
+            if (tab === 'courses')  loadCourses();
+            if (tab === 'instructors') loadInstructors();
+        }
+
+        async function loadStudents() {
+            const el = document.getElementById('students-list');
+            try {
+                const students = await Api.get('/students');
+                if (!students || !students.length) {
+                    el.innerHTML = '<div class="empty-state"><p>No students found.</p></div>';
+                    return;
+                }
+                el.innerHTML = `
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Actions</th></tr></thead>
+                            <tbody>
+                                ${students.map(s => `
+                                    <tr>
+                                        <td>${s.id}</td>
+                                        <td>${Utils.escapeHtml(s.name)}</td>
+                                        <td>${Utils.escapeHtml(s.email)}</td>
+                                        <td><a href="/courses.html" class="btn btn-outline btn-sm">View Enrollments</a></td>
+                                    </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>`;
+            } catch (err) {
+                el.innerHTML = `<p style="color:var(--error-color)">${Utils.escapeHtml(err.message)}</p>`;
+            }
+        }
+
+        async function loadCourses() {
+            const el = document.getElementById('courses-list');
+            try {
+                const result = await Api.get('/courses/paged?page=1&pageSize=50');
+                const courses = result.data || [];
+                if (!courses.length) {
+                    el.innerHTML = '<div class="empty-state"><p>No courses found.</p></div>';
+                    return;
+                }
+                el.innerHTML = `
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>#</th><th>Title</th><th>Credits</th><th>Instructor</th><th>Actions</th></tr></thead>
+                            <tbody>
+                                ${courses.map(c => `
+                                    <tr>
+                                        <td>${c.id}</td>
+                                        <td>${Utils.escapeHtml(c.title)}</td>
+                                        <td>${c.credits}</td>
+                                        <td>${Utils.escapeHtml(c.instructorName || 'TBA')}</td>
+                                        <td>
+                                            <button class="btn btn-danger btn-sm" onclick="deleteCourse(${c.id})">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </td>
+                                    </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>`;
+            } catch (err) {
+                el.innerHTML = `<p style="color:var(--error-color)">${Utils.escapeHtml(err.message)}</p>`;
+            }
+        }
+
+        async function loadInstructors() {
+            const el = document.getElementById('instructors-list');
+            try {
+                const instructors = await Api.get('/instructors');
+                if (!instructors || !instructors.length) {
+                    el.innerHTML = '<div class="empty-state"><p>No instructors found.</p></div>';
+                    return;
+                }
+                el.innerHTML = `
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>#</th><th>Name</th><th>Biography</th><th>Office</th></tr></thead>
+                            <tbody>
+                                ${instructors.map(i => `
+                                    <tr>
+                                        <td>${i.id}</td>
+                                        <td>${Utils.escapeHtml(i.userName || 'N/A')}</td>
+                                        <td>${Utils.escapeHtml(Utils.truncate(i.biography, 80))}</td>
+                                        <td>${Utils.escapeHtml(i.officeLocation || 'N/A')}</td>
+                                    </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>`;
+            } catch (err) {
+                el.innerHTML = `<p style="color:var(--error-color)">${Utils.escapeHtml(err.message)}</p>`;
+            }
+        }
+
+        async function deleteCourse(id) {
+            const confirmed = await UI.confirm('Delete Course', 'Permanently delete this course?');
+            if (!confirmed) return;
+            try {
+                await Api.delete(`/courses/${id}`);
+                UI.toast('Course deleted.', 'success');
+                loadCourses();
+            } catch (err) {
+                UI.toast(err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

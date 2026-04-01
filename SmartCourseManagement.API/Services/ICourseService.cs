@@ -10,6 +10,7 @@ namespace SmartCourseManagement.API.Services
     public interface ICourseService
     {
         Task<IEnumerable<CourseReadDto>> GetAllCoursesAsync();
+        Task<PagedResponse<CourseReadDto>> GetCoursesAsync(PagedRequest request);
         Task<CourseReadDto> GetCourseByIdAsync(int id);
         Task<CourseReadDto> CreateCourseAsync(CourseCreateDto courseDto);
         Task<bool> UpdateCourseAsync(int id, CourseUpdateDto courseDto);

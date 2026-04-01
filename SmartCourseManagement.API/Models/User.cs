@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -27,6 +28,13 @@ namespace SmartCourseManagement.API.Models
         [Required]
         [MaxLength(20)]
         public string Role { get; set; }
+
+        // Audit fields
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public string CreatedBy { get; set; } = string.Empty;
+        public string UpdatedBy { get; set; } = string.Empty;
+        public bool IsDeleted { get; set; } = false;
 
         // One-to-One: User has one InstructorProfile (nullable for non-instructors)
         public InstructorProfile InstructorProfile { get; set; }
