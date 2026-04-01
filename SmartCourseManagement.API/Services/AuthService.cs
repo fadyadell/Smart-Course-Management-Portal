@@ -41,11 +41,11 @@ namespace SmartCourseManagement.API.Services
         /// <summary>Registers a new user, sends a welcome email, and returns JWT + refresh token.</summary>
         public async Task<AuthResponseDto> RegisterAsync(UserRegisterDto registerDto)
         {
-            _logger.LogInformation("Registration attempt for email: {Email}", registerDto.Email);
+            _logger.LogInformation("Registration attempt for email: {Email}", SanitizeForLog(registerDto.Email));
 
             if (await _context.Users.AnyAsync(u => u.Email == registerDto.Email))
             {
-                _logger.LogWarning("Registration failed – duplicate email: {Email}", registerDto.Email);
+                _logger.LogWarning("Registration failed – duplicate email: {Email}", SanitizeForLog(registerDto.Email));
                 throw new Exception("A user with this email already exists.");
             }
 
@@ -73,7 +73,7 @@ namespace SmartCourseManagement.API.Services
 
             // Send welcome email asynchronously (fire and forget; errors are logged)
             try { await _emailService.SendWelcomeEmailAsync(user.Email, user.Name); }
-            catch (Exception ex) { _logger.LogWarning(ex, "Welcome email failed for {Email}", user.Email); }
+            catch (Exception ex) { _logger.LogWarning(ex, "Welcome email failed for user ID {UserId}", user.Id); }
 
             var (jwtToken, refreshTokenValue) = await CreateTokensAsync(user);
 
@@ -85,14 +85,14 @@ namespace SmartCourseManagement.API.Services
         /// <summary>Authenticates a user and returns JWT + refresh token.</summary>
         public async Task<AuthResponseDto> LoginAsync(LoginDto loginDto)
         {
-            _logger.LogInformation("Login attempt for email: {Email}", loginDto.Email);
+            _logger.LogInformation("Login attempt for email: {Email}", SanitizeForLog(loginDto.Email));
 
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
 
             if (user == null || !VerifyPassword(loginDto.Password, user.PasswordHash))
             {
-                _logger.LogWarning("Login failed for email: {Email}", loginDto.Email);
+                _logger.LogWarning("Login failed for email: {Email}", SanitizeForLog(loginDto.Email));
                 return null!;
             }
 
@@ -217,5 +217,12 @@ namespace SmartCourseManagement.API.Services
             rng.GetBytes(randomBytes);
             return Convert.ToBase64String(randomBytes);
         }
+
+        /// <summary>
+        /// Removes newlines and carriage returns from user-supplied strings before they are written
+        /// to log entries, preventing log forging / log injection attacks.
+        /// </summary>
+        private static string SanitizeForLog(string value) =>
+            value.Replace('\n', '_').Replace('\r', '_');
     }
 }

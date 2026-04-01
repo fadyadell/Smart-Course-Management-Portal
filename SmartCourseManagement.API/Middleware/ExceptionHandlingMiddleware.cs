@@ -33,10 +33,16 @@ namespace SmartCourseManagement.API.Middleware
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unhandled exception for {Method} {Path}", context.Request.Method, context.Request.Path);
+                // Sanitize user-provided values before logging to prevent log forging
+                var method = SanitizeForLog(context.Request.Method);
+                var path = SanitizeForLog(context.Request.Path.ToString());
+                _logger.LogError(ex, "Unhandled exception for {Method} {Path}", method, path);
                 await HandleExceptionAsync(context, ex);
             }
         }
+
+        private static string SanitizeForLog(string value) =>
+            value.Replace('\n', '_').Replace('\r', '_');
 
         private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {

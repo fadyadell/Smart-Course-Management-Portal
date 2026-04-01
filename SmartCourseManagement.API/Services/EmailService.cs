@@ -52,12 +52,8 @@ Smart Course Management Team";
         public Task SendEmailAsync(string toEmail, string subject, string body)
         {
             // In a real app this would use MailKit or SendGrid.
-            // For now we log the email details so tests and dev runs can verify behaviour.
-            _logger.LogInformation(
-                "📧 EMAIL SENT | To: {To} | Subject: {Subject} | Body: {Body}",
-                toEmail, subject, body);
-
-            Console.WriteLine($"[EMAIL] To: {toEmail} | Subject: {subject}");
+            // We intentionally do NOT log the recipient address to avoid storing PII in logs.
+            _logger.LogInformation("📧 EMAIL SENT | Subject: {Subject}", subject);
             return Task.CompletedTask;
         }
     }
