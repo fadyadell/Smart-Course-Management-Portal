@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Course Management | Learn with Excellence</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header id="main-header" class="hidden">
+        <div class="container nav-content">
+            <div class="logo"><i class="fas fa-university"></i> SmartCourse</div>
+            <nav class="nav-links">
+                <a href="#" onclick="app.showPage('dashboard')">Dashboard</a>
+                <a href="#" onclick="app.showPage('courses')" id="nav-courses">Courses</a>
+                <a href="#" onclick="app.showPage('profile')">Profile</a>
+                <button class="btn btn-outline" onclick="app.logout()">Logout</button>
+            </nav>
+        </div>
+    </header>
+
+    <main id="app" class="container mt-4">
+        <!-- Loader -->
+        <div id="loader" class="text-center mt-4">
+            <i class="fas fa-spinner fa-spin fa-3x" style="color: var(--primary-color)"></i>
+        </div>
+
+        <!-- Notification -->
+        <div id="notification-area"></div>
+
+        <!-- Auth Pages -->
+        <section id="login-page" class="hidden animate-fade-in">
+            <div class="auth-card">
+                <h2 class="text-center mb-4">Welcome Back</h2>
+                <form onsubmit="app.handleLogin(event)">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="login-email" required placeholder="name@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="login-password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%">Sign In</button>
+                    <p class="mt-4 text-center">Don't have an account? <a href="#" onclick="app.showPage('register')">Register here</a></p>
+                </form>
+            </div>
+        </section>
+
+        <section id="register-page" class="hidden animate-fade-in">
+            <div class="auth-card">
+                <h2 class="text-center mb-4">Create Account</h2>
+                <form onsubmit="app.handleRegister(event)">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="reg-name" required placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="reg-email" required placeholder="name@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="reg-password" required placeholder="Min 6 characters">
+                    </div>
+                    <div class="form-group">
+                        <label>Role</label>
+                        <select id="reg-role">
+                            <option value="Student">Student</option>
+                            <option value="Instructor">Instructor</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%">Create Account</button>
+                    <p class="mt-4 text-center">Already have an account? <a href="#" onclick="app.showPage('login')">Sign In</a></p>
+                </form>
+            </div>
+        </section>
+
+        <!-- Dashboard Pages -->
+        <section id="dashboard-page" class="hidden animate-fade-in">
+            <div class="grid grid-cols-3 mt-4">
+                <div class="glass-card">
+                    <h3>My Courses</h3>
+                    <p class="text-muted" id="stats-courses">Loading...</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Active Enrollments</h3>
+                    <p class="text-muted" id="stats-enrollments">Loading...</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Latest Announcements</h3>
+                    <p class="text-muted">No new announcements today.</p>
+                </div>
+            </div>
+            
+            <div class="mt-4 glass-card" id="dashboard-content">
+                <!-- Content injected here via app.js -->
+            </div>
+        </section>
+
+        <section id="courses-page" class="hidden animate-fade-in">
+            <div class="nav-content mb-4">
+                <h2>Explore Courses</h2>
+                <button class="btn btn-primary" id="add-course-btn" onclick="app.showCourseModal()" style="display:none">
+                    <i class="fas fa-plus"></i> Add New Course
+                </button>
+            </div>
+            <div id="courses-grid" class="grid grid-cols-3">
+                <!-- Courses injected here -->
+            </div>
+        </section>
+
+        <!-- Profile Page -->
+        <section id="profile-page" class="hidden animate-fade-in">
+            <div class="auth-card" style="max-width: 600px; margin: 3rem auto;">
+                <h2 class="text-center mb-4"><i class="fas fa-user-circle"></i> My Profile</h2>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="profile-name" readonly style="background: #e2e8f0; border-color: transparent;">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="profile-email" readonly style="background: #e2e8f0; border-color: transparent;">
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <input type="text" id="profile-role" readonly style="background: #e2e8f0; border-color: transparent;">
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

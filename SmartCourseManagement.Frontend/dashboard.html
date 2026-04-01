@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Smart Course Portal</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar glass">
+        <div class="nav-logo">SmartPortal</div>
+        <ul class="nav-links">
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="courses.html">Courses</a></li>
+            <li id="adminLink" style="display: none;"><a href="admin.html">Admin</a></li>
+            <li id="instructorLink" style="display: none;"><a href="instructor.html">Instructor</a></li>
+            <li><a href="#" onclick="api.auth.logout()">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <header style="margin-bottom: 2rem;">
+            <h1 id="welcomeTitle">Welcome, User</h1>
+            <p id="roleBadge" class="course-badge" style="margin-top: 0.5rem;"></p>
+        </header>
+
+        <section id="studentSection" style="display: none;">
+            <h2>My Enrolled Courses</h2>
+            <div id="enrolledCourses" class="dashboard-grid">
+                <!-- Dynamic content -->
+            </div>
+        </section>
+
+        <section id="allCoursesSection">
+            <h2 style="margin-top: 2rem;">Available Courses</h2>
+            <div id="allCourses" class="dashboard-grid">
+                <!-- Dynamic content -->
+            </div>
+        </section>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        if (!api.auth.isAuthenticated()) {
+            window.location.href = 'login.html';
+        }
+
+        const user = api.auth.getUser();
+        document.getElementById('welcomeTitle').innerText = `Welcome, ${user.name}`;
+        document.getElementById('roleBadge').innerText = user.role;
+
+        // Role-based visibility
+        if (user.role === 'Admin') document.getElementById('adminLink').style.display = 'block';
+        if (user.role === 'Instructor') document.getElementById('instructorLink').style.display = 'block';
+        if (user.role === 'Student') document.getElementById('studentSection').style.display = 'block';
+
+        async function loadContent() {
+            try {
+                // Load all courses
+                const courses = await api.courses.getAll();
+                const coursesList = document.getElementById('allCourses');
+                coursesList.innerHTML = courses.map(c => `
+                    <div class="course-card glass">
+                        <span class="course-badge">${c.credits} Credits</span>
+                        <h3>${c.title}</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.875rem;">${c.description}</p>
+                        <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.875rem;">By ${c.instructorName}</span>
+                            ${user.role === 'Student' ? `<button onclick="enroll(${c.id})" style="width: auto; padding: 0.5rem 1rem;">Enroll</button>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+
+                if (user.role === 'Student') {
+                    const enrollments = await api.enrollments.getMyEnrollments();
+                    const enrolledList = document.getElementById('enrolledCourses');
+                    enrolledList.innerHTML = enrollments.length ? enrollments.map(e => `
+                        <div class="course-card glass" style="border-left: 4px solid var(--primary-color);">
+                            <h3>${e.courseTitle}</h3>
+                            <p style="color: var(--text-secondary); font-size: 0.875rem;">Enrolled on: ${new Date(e.enrollmentDate).toLocaleDateString()}</p>
+                        </div>
+                    `).join('') : '<p style="color: var(--text-secondary);">You are not enrolled in any courses yet.</p>';
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function enroll(courseId) {
+            try {
+                await api.enrollments.enroll(courseId);
+                alert('Successfully enrolled!');
+                loadContent();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        loadContent();
+    </script>
+</body>
+</html>
