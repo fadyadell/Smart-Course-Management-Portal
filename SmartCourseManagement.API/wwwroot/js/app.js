@@ -35,8 +35,11 @@ const app = {
 
         try {
             const data = await this.fetchWrapper('/Auth/login', 'POST', { email, password });
-            this.token = data.token;
+            this.token = data.accessToken || data.token;
             localStorage.setItem('token', this.token);
+            if (data.refreshToken) {
+                localStorage.setItem('refreshToken', data.refreshToken);
+            }
             localStorage.setItem('user', JSON.stringify(data.user || {}));
             this.notify('Success', 'Welcome back!');
             setTimeout(() => this.validateToken(), 500);

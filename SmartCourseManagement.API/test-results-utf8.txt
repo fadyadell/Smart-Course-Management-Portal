@@ -1,0 +1,26 @@
+﻿≡ƒÜÇ Starting System Test Suite...
+
+--- ≡ƒöÉ Testing Authentication ---
+[200] Register Admin: Γ£à PASSED 
+[200] Register Instructor: Γ£à PASSED
+[200] Register Student: Γ£à PASSED
+[401] Login Admin: Γ¥î FAILED
+[401] Login Instructor: Γ¥î FAILED
+[401] Login Student: Γ¥î FAILED
+
+--- ≡ƒôÜ Testing Courses ---
+[401] Create Course (Admin): Γ¥î FAILED 
+[401] Read All Courses: Γ¥î FAILED
+
+--- ≡ƒÄô Testing Students & Enrollments ---
+[401] Enroll Student in Course: Γ¥î FAILED 
+[401] List Students (Admin): Γ¥î FAILED
+[405] List Enrollments: Γ¥î FAILED
+
+--- Γ¥î Testing Error Handling ---
+[401] 401 Unauthorized Test: Γ£à PASSED
+[401] 403 Forbidden Test: Γ¥î FAILED
+[401] 404 Not Found Test: Γ¥î FAILED
+[401] 400 Bad Request Test: Γ¥î FAILED
+
+Γ£à Test Suite Complete!

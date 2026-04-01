@@ -154,7 +154,6 @@ if (app.Environment.EnvironmentName == "Development")
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Smart Course Management API V1");
-        c.RoutePrefix = string.Empty;
     });
 }
 

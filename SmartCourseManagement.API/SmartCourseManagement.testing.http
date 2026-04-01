@@ -1,0 +1,250 @@
+@hostname = localhost
+@port = 5202
+@host = http://{{hostname}}:{{port}}
+@contentType = application/json
+
+# ==========================================
+# 🔐 AUTHENTICATION & USERS (8 Screenshots)
+# ==========================================
+
+### 1-A. Register Admin
+POST {{host}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "name": "Super Admin",
+  "email": "admin@example.com",
+  "password": "Password123!",
+  "role": "Admin"
+}
+
+### 1-B. Login Admin (Will return JWT Token)
+# @name adminLogin
+POST {{host}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@example.com",
+  "password": "Password123!"
+}
+
+@adminToken = {{adminLogin.response.body.token}}
+
+### 2-A. Register Instructor
+POST {{host}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "name": "John Doe (Teacher)",
+  "email": "instructor@example.com",
+  "password": "Password123!",
+  "role": "Instructor"
+}
+
+### 2-B. Login Instructor
+# @name instructorLogin
+POST {{host}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "instructor@example.com",
+  "password": "Password123!"
+}
+
+@instructorToken = {{instructorLogin.response.body.token}}
+
+### 3-A. Register Student
+POST {{host}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "name": "Jane Smith (Student)",
+  "email": "student@example.com",
+  "password": "Password123!",
+  "role": "Student"
+}
+
+### 3-B. Login Student
+# @name studentLogin
+POST {{host}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "student@example.com",
+  "password": "Password123!"
+}
+
+@studentToken = {{studentLogin.response.body.token}}
+
+# ==========================================
+# 📚 COURSES (6 Screenshots)
+# ==========================================
+
+### 1. Create a Course (Admin or Instructor)
+# @name createCourse
+POST {{host}}/api/courses
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "title": "Advanced ASP.NET Core 10",
+  "description": "Learn how to build production-ready APIs from scratch.",
+  "credits": 4,
+  "instructorId": 1
+}
+
+@newCourseId = {{createCourse.response.body.id}}
+
+### 2. Read All Courses
+GET {{host}}/api/courses
+Authorization: Bearer {{studentToken}}
+
+### 3. Read Specific Course
+GET {{host}}/api/courses/{{newCourseId}}
+Authorization: Bearer {{studentToken}}
+
+### 4. Update Course (Admin or Instructor)
+PUT {{host}}/api/courses/{{newCourseId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "title": "Advanced ASP.NET Core 10 (Updated Content)",
+  "description": "Updated course syllabus for the 2026 term.",
+  "credits": 5
+}
+
+### 5. Search Courses
+GET {{host}}/api/courses/search?searchTerm=ASP.NET
+Authorization: Bearer {{studentToken}}
+
+### 6. Pagination Courses
+GET {{host}}/api/courses/search?page=1&pageSize=2
+Authorization: Bearer {{studentToken}}
+
+
+# ==========================================
+# 🎓 STUDENTS (2 Screenshots)
+# ==========================================
+
+### 1. List All Students (Admin/Instructor)
+# Assuming 1 is the student ID
+GET {{host}}/api/students
+Authorization: Bearer {{adminToken}}
+
+### 2. Get Student By ID
+GET {{host}}/api/students/1
+Authorization: Bearer {{adminToken}}
+
+
+# ==========================================
+# 👨‍🏫 INSTRUCTORS (3 Screenshots)
+# ==========================================
+
+### 1. List All Instructors
+GET {{host}}/api/instructors
+Authorization: Bearer {{adminToken}}
+
+### 2. Get Instructor By ID
+GET {{host}}/api/instructors/1
+Authorization: Bearer {{adminToken}}
+
+### 3. Update Instructor Profile (Instructor/Admin)
+PUT {{host}}/api/instructors/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "bio": "Senior Backend Developer with 15 years of experience in .NET APIs.",
+  "expertiseArea": "Web Development, Database Design"
+}
+
+
+# ==========================================
+# 📝 ENROLLMENTS (6 Screenshots)
+# ==========================================
+
+### 1. Enroll Student in Course
+POST {{host}}/api/enrollments
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "studentId": 1,
+  "courseId": {{newCourseId}}
+}
+
+### 2. View All Enrollments (Admin)
+GET {{host}}/api/enrollments
+Authorization: Bearer {{adminToken}}
+
+### 3. View Student's specific Enrollments
+GET {{host}}/api/enrollments/student/1
+Authorization: Bearer {{studentToken}}
+
+### 4. View Course's specific Enrollments
+GET {{host}}/api/enrollments/course/{{newCourseId}}
+Authorization: Bearer {{instructorToken}}
+
+### 5. Grade Enrollment (Instructor)
+PUT {{host}}/api/enrollments/1
+Content-Type: {{contentType}}
+Authorization: Bearer {{instructorToken}}
+
+{
+  "grade": "A"
+}
+
+### 6. Unenroll Student
+DELETE {{host}}/api/enrollments/1
+Authorization: Bearer {{adminToken}}
+
+
+# ==========================================
+# ❌ ERROR HANDLING (4 Screenshots)
+# ==========================================
+
+### 1. 401 Unauthorized (No Token)
+GET {{host}}/api/courses
+
+### 2. 403 Forbidden (Student trying to create course)
+POST {{host}}/api/courses
+Content-Type: {{contentType}}
+Authorization: Bearer {{studentToken}}
+
+{
+  "title": "Hacked Course",
+  "description": "Should fail",
+  "credits": 2,
+  "instructorId": 1
+}
+
+### 3. 404 Not Found
+GET {{host}}/api/courses/99999
+Authorization: Bearer {{adminToken}}
+
+### 4. 400 Bad Request (Invalid Data - Credits too high)
+POST {{host}}/api/courses
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "title": "A", 
+  "description": "Fails validation on title length and credits",
+  "credits": 100, 
+  "instructorId": 1
+}
+
+# ==========================================
+# 🌟 BONUS: SCHEMAS & REFRESH TOKENS (4 Screenshots)
+# ==========================================
+
+### 1. Test Refresh Token
+POST {{host}}/api/auth/refresh
+Content-Type: {{contentType}}
+
+{
+  "refreshToken": "REPLACE_WITH_YOUR_REFRESH_TOKEN_FROM_LOGIN"
+}
+
+### (Hint: For Swagger Schema screenshots, simply scroll down to the bottom of the Swagger UI dashboard at http://localhost:5202/swagger and take screenshots of the Data Models!)
