@@ -5,11 +5,10 @@ namespace SmartCourseManagement.API.Models
 {
     /// <summary>
     /// Represents a user in the system (Admin, Instructor, or Student).
+    /// Inherits audit and soft-delete fields from BaseEntity.
     /// </summary>
-    public class User
+    public class User : BaseEntity
     {
-        [Key]
-        public int Id { get; set; }
 
         [Required]
         [MaxLength(100)]

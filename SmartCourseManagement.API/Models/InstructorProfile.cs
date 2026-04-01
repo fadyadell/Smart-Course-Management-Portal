@@ -7,11 +7,10 @@ namespace SmartCourseManagement.API.Models
     /// <summary>
     /// One-to-One with User. An instructor profile holds extra info about a user with the Instructor role.
     /// One-to-Many with Course (an instructor teaches many courses).
+    /// Inherits audit and soft-delete fields from BaseEntity.
     /// </summary>
-    public class InstructorProfile
+    public class InstructorProfile : BaseEntity
     {
-        [Key]
-        public int Id { get; set; }
 
         // One-to-One FK to User
         [Required]
