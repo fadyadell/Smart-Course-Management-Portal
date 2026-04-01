@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -10,24 +9,32 @@ using SmartCourseManagement.API.Models;
 namespace SmartCourseManagement.API.Services
 {
     /// <summary>
-    /// Handles student enrollment and unenrollment operations.
-    /// Demonstrates the Many-to-Many relationship between Students and Courses.
+    /// Handles student enrollment and unenrollment operations with pagination support.
     /// </summary>
     public class EnrollmentService : IEnrollmentService
     {
         private readonly AppDbContext _context;
+        private readonly IEmailService _emailService;
 
-        public EnrollmentService(AppDbContext context)
+        public EnrollmentService(AppDbContext context, IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
-        /// <summary>Returns all enrollments for a given student using AsNoTracking() + Select().</summary>
-        public async Task<IEnumerable<EnrollmentReadDto>> GetStudentEnrollmentsAsync(int studentId)
+        /// <summary>Returns paginated enrollments for a given student.</summary>
+        public async Task<PagedResponse<EnrollmentReadDto>> GetStudentEnrollmentsAsync(int studentId, PagedRequest request)
         {
-            return await _context.Enrollments
-                .AsNoTracking() // Read-only query optimization
-                .Where(e => e.StudentId == studentId)
+            var query = _context.Enrollments
+                .AsNoTracking()
+                .Where(e => e.StudentId == studentId);
+
+            var total = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(e => e.EnrollmentDate)
+                .Skip(request.Skip)
+                .Take(request.Take)
                 .Select(e => new EnrollmentReadDto
                 {
                     Id = e.Id,
@@ -38,12 +45,52 @@ namespace SmartCourseManagement.API.Services
                     EnrollmentDate = e.EnrollmentDate
                 })
                 .ToListAsync();
+
+            return new PagedResponse<EnrollmentReadDto>(items, total, request.Page, request.PageSize);
         }
 
-        /// <summary>Enrolls a student in a course. Throws if already enrolled.</summary>
+        /// <summary>Returns all enrollments with optional filtering and pagination (Admin/Instructor).</summary>
+        public async Task<PagedResponse<EnrollmentReadDto>> GetAllEnrollmentsAsync(EnrollmentFilterRequest filter)
+        {
+            var query = _context.Enrollments.AsNoTracking().AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(filter.StudentSearch))
+            {
+                var term = filter.StudentSearch.ToLower();
+                query = query.Where(e =>
+                    e.Student.Name.ToLower().Contains(term) ||
+                    e.Student.Email.ToLower().Contains(term));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.CourseSearch))
+            {
+                var term = filter.CourseSearch.ToLower();
+                query = query.Where(e => e.Course.Title.ToLower().Contains(term));
+            }
+
+            var total = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(e => e.EnrollmentDate)
+                .Skip(filter.Skip)
+                .Take(filter.Take)
+                .Select(e => new EnrollmentReadDto
+                {
+                    Id = e.Id,
+                    StudentId = e.StudentId,
+                    StudentName = e.Student.Name,
+                    CourseId = e.CourseId,
+                    CourseTitle = e.Course.Title,
+                    EnrollmentDate = e.EnrollmentDate
+                })
+                .ToListAsync();
+
+            return new PagedResponse<EnrollmentReadDto>(items, total, filter.Page, filter.PageSize);
+        }
+
+        /// <summary>Enrolls a student in a course and sends a confirmation email.</summary>
         public async Task<EnrollmentReadDto> EnrollStudentAsync(EnrollmentCreateDto enrollmentDto)
         {
-            // Prevent duplicate enrollments
             if (await _context.Enrollments.AnyAsync(
                 e => e.StudentId == enrollmentDto.StudentId && e.CourseId == enrollmentDto.CourseId))
             {
@@ -60,8 +107,7 @@ namespace SmartCourseManagement.API.Services
             _context.Enrollments.Add(enrollment);
             await _context.SaveChangesAsync();
 
-            // Return the created enrollment as a DTO using LINQ projection
-            return await _context.Enrollments
+            var result = await _context.Enrollments
                 .AsNoTracking()
                 .Where(e => e.Id == enrollment.Id)
                 .Select(e => new EnrollmentReadDto
@@ -74,15 +120,26 @@ namespace SmartCourseManagement.API.Services
                     EnrollmentDate = e.EnrollmentDate
                 })
                 .FirstOrDefaultAsync();
+
+            // Send enrollment confirmation email
+            try
+            {
+                var student = await _context.Users.FindAsync(enrollmentDto.StudentId);
+                if (student != null && result != null)
+                    await _emailService.SendEnrollmentConfirmationAsync(student.Email, student.Name, result.CourseTitle);
+            }
+            catch { /* Email failure should not abort enrollment */ }
+
+            return result!;
         }
 
-        /// <summary>Removes an enrollment by ID. Returns false if not found.</summary>
+        /// <summary>Soft-deletes (unenrolls) an enrollment by ID. Returns false if not found.</summary>
         public async Task<bool> UnenrollStudentAsync(int id)
         {
             var enrollment = await _context.Enrollments.FindAsync(id);
             if (enrollment == null) return false;
 
-            _context.Enrollments.Remove(enrollment);
+            enrollment.IsDeleted = true;
             await _context.SaveChangesAsync();
             return true;
         }
