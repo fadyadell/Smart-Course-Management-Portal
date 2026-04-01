@@ -1,2 +1,0 @@
-﻿     1>C:\Users\Asus\Smart-Course-Management-Portal\SmartCourseManagement.API\Program.cs(10,15): error CS0103: The name 'WebApplication' does not exist in the current context [C:\Users\Asus\Smart-Course-Management-Portal\SmartCourseManagement.API\SmartCourseManagement.API.csproj]
-         C:\Users\Asus\Smart-Course-Management-Portal\SmartCourseManagement.API\Program.cs(10,15): error CS0103: The name 'WebApplication' does not exist in the current context [C:\Users\Asus\Smart-Course-Management-Portal\SmartCourseManagement.API\SmartCourseManagement.API.csproj]
