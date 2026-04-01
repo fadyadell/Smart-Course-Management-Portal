@@ -1,4 +1,4 @@
-const API_URL = 'https://localhost:7153/api'; // Update port if different
+const API_URL = (window.__API_BASE_URL__ || 'http://localhost:5202/api').replace(/\/$/, '');
 
 const api = {
     async request(endpoint, options = {}) {
@@ -9,10 +9,15 @@ const api = {
             ...options.headers
         };
 
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            ...options,
-            headers
-        });
+        let response;
+        try {
+            response = await fetch(`${API_URL}${endpoint}`, {
+                ...options,
+                headers
+            });
+        } catch (error) {
+            throw new Error(`Unable to reach the API at ${API_URL}. Make sure the backend is running.`);
+        }
 
         if (response.status === 401) {
             localStorage.removeItem('token');
@@ -20,10 +25,11 @@ const api = {
             return;
         }
 
-        const data = await response.json();
+        const contentType = response.headers.get('content-type') || '';
+        const data = contentType.includes('application/json') ? await response.json() : null;
         
         if (!response.ok) {
-            throw new Error(data.message || 'Something went wrong');
+            throw new Error(data?.message || 'Something went wrong');
         }
 
         return data;

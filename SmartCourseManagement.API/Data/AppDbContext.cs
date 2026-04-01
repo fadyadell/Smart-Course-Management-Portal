@@ -63,14 +63,14 @@ namespace SmartCourseManagement.API.Data
                 .IsUnique();
 
             // SEED DATA
-            // Note: Password is 'Password123' hashed with BCrypt
+            // Note: Password is 'InstructorPass123!' hashed with BCrypt
             modelBuilder.Entity<User>().HasData(
                 new User 
                 { 
                     Id = 1, 
                     Name = "Dr. Jane Smith", 
                     Email = "instructor@example.com", 
-                    PasswordHash = "$2a$11$S8mJpx/o7u6H1iU96J10nuvL1gYhX6A9N5X/B8p3bY7fF.E2f/v1i", // "Password123"
+                    PasswordHash = "$2a$11$XdmZbeEuxVdBoHMI/IqjpO3BhIDs6wgq8iXmVDmRS8RD4Ih3fiNrm", // "InstructorPass123!"
                     Role = "Instructor" 
                 }
             );
