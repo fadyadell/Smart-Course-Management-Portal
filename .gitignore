@@ -1,0 +1,35 @@
+## .NET Build Artifacts
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.DotSettings.user
+
+## Log files
+logs/
+*.log
+*.txt.log
+
+## Build outputs in API folder
+SmartCourseManagement.API/bin/
+SmartCourseManagement.API/obj/
+SmartCourseManagement.API/*.log
+SmartCourseManagement.API/build*.txt
+SmartCourseManagement.API/build*.log
+SmartCourseManagement.API/error*.log
+SmartCourseManagement.API/errs.txt
+SmartCourseManagement.API/final_*.log
+SmartCourseManagement.API/full_*.log
+SmartCourseManagement.API/last_*.log
+SmartCourseManagement.API/readable_err.txt
+SmartCourseManagement.API/run_output.txt
+SmartCourseManagement.API/seed_*.log
+
+## NuGet
+*.nupkg
+.nuget/
+
+## Rider/VS Code
+.idea/
+.vscode/

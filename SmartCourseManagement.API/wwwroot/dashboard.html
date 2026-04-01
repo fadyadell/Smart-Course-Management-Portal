@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard – Smart Course Management Portal</title>
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container nav-content">
+            <div class="logo"><i class="fas fa-university"></i> SmartCourse</div>
+            <nav class="nav-links">
+                <a href="/dashboard.html" class="active">Dashboard</a>
+                <a href="/courses.html">Courses</a>
+                <a href="/profile.html">Profile</a>
+                <span class="user-badge" id="user-badge">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="user-display-name">User</span>
+                    <span class="badge" id="user-role-badge">Student</span>
+                </span>
+                <button class="btn btn-outline btn-sm" onclick="Auth.logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding-top:2rem;padding-bottom:4rem;">
+        <div id="dashboard-welcome" class="mb-8 animate-fade-in">
+            <h1 style="font-size:1.75rem;">Welcome back, <span id="welcome-name" style="color:var(--primary-color)">...</span>! 👋</h1>
+            <p class="text-muted" style="margin-top:0.25rem;">Here's what's happening in your portal</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid mb-8 stagger-children animate-fade-in" id="stats-grid">
+            <div class="stats-card">
+                <div class="stats-icon"><i class="fas fa-book-open"></i></div>
+                <div class="stats-value" id="stat-courses">–</div>
+                <div class="stats-label">Available Courses</div>
+            </div>
+            <div class="stats-card">
+                <div class="stats-icon"><i class="fas fa-user-graduate"></i></div>
+                <div class="stats-value" id="stat-enrollments">–</div>
+                <div class="stats-label" id="stat-enrollments-label">My Enrollments</div>
+            </div>
+            <div class="stats-card">
+                <div class="stats-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                <div class="stats-value" id="stat-instructors">–</div>
+                <div class="stats-label">Instructors</div>
+            </div>
+            <div class="stats-card">
+                <div class="stats-icon"><i class="fas fa-trophy"></i></div>
+                <div class="stats-value" id="stat-role">–</div>
+                <div class="stats-label">Your Role</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section-header mb-6">
+            <h2 class="section-title">Quick Actions</h2>
+        </div>
+        <div class="grid grid-cols-3 mb-8" id="quick-actions">
+            <a href="/courses.html" class="glass-card hover-lift" style="text-decoration:none;display:flex;align-items:center;gap:1rem;">
+                <span style="font-size:2rem;color:var(--primary-color)"><i class="fas fa-search"></i></span>
+                <div>
+                    <div style="font-weight:600;color:var(--text-primary)">Browse Courses</div>
+                    <div class="text-muted" style="font-size:0.8rem">Find and enroll in courses</div>
+                </div>
+            </a>
+            <a href="/profile.html" class="glass-card hover-lift" style="text-decoration:none;display:flex;align-items:center;gap:1rem;">
+                <span style="font-size:2rem;color:var(--primary-color)"><i class="fas fa-user-circle"></i></span>
+                <div>
+                    <div style="font-weight:600;color:var(--text-primary)">My Profile</div>
+                    <div class="text-muted" style="font-size:0.8rem">View and edit your profile</div>
+                </div>
+            </a>
+            <div class="glass-card hover-lift" id="action-instructor" style="display:none;align-items:center;gap:1rem;cursor:pointer;" onclick="window.location.href='/instructor-panel.html'">
+                <span style="font-size:2rem;color:var(--primary-color)"><i class="fas fa-chalkboard"></i></span>
+                <div>
+                    <div style="font-weight:600;color:var(--text-primary)">Instructor Panel</div>
+                    <div class="text-muted" style="font-size:0.8rem">Manage your courses</div>
+                </div>
+            </div>
+            <div class="glass-card hover-lift" id="action-admin" style="display:none;align-items:center;gap:1rem;cursor:pointer;" onclick="window.location.href='/admin-panel.html'">
+                <span style="font-size:2rem;color:var(--primary-color)"><i class="fas fa-cogs"></i></span>
+                <div>
+                    <div style="font-weight:600;color:var(--text-primary)">Admin Panel</div>
+                    <div class="text-muted" style="font-size:0.8rem">Manage users & courses</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Content -->
+        <div class="section-header">
+            <h2 class="section-title" id="recent-title">Recent Courses</h2>
+        </div>
+        <div id="dashboard-content"><div class="spinner"></div></div>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        const user = Auth.requireAuth();
+        if (user) {
+            // Set user info in the UI
+            document.getElementById('welcome-name').textContent = user.name;
+            document.getElementById('user-display-name').textContent = user.name;
+            document.getElementById('user-role-badge').textContent = user.role;
+            document.getElementById('stat-role').textContent = user.role;
+
+            // Role-specific elements
+            if (user.role === 'Instructor' || user.role === 'Admin') {
+                const el = document.getElementById('action-instructor');
+                if (el) { el.style.display = 'flex'; }
+            }
+            if (user.role === 'Admin') {
+                const el = document.getElementById('action-admin');
+                if (el) { el.style.display = 'flex'; }
+            }
+
+            loadDashboard();
+        }
+
+        async function loadDashboard() {
+            try {
+                const [coursesResult, instructors] = await Promise.all([
+                    Api.get('/courses/paged?page=1&pageSize=6'),
+                    Api.get('/instructors').catch(() => [])
+                ]);
+
+                const courses = coursesResult.data || [];
+                document.getElementById('stat-courses').textContent = coursesResult.total || courses.length;
+                document.getElementById('stat-instructors').textContent = Array.isArray(instructors) ? instructors.length : '–';
+
+                let enrollments = [];
+                if (user.role === 'Student') {
+                    try {
+                        enrollments = await Api.get('/enrollments/my-enrollments');
+                    } catch { /* no enrollments */ }
+                    document.getElementById('stat-enrollments').textContent = Array.isArray(enrollments) ? enrollments.length : 0;
+
+                    if (enrollments.length > 0) {
+                        document.getElementById('recent-title').textContent = 'My Enrolled Courses';
+                        document.getElementById('dashboard-content').innerHTML = `
+                            <div class="grid grid-cols-3 stagger-children">
+                                ${enrollments.slice(0, 6).map(e => `
+                                    <div class="glass-card animate-fade-in">
+                                        <h4>${Utils.escapeHtml(e.courseTitle || 'Course')}</h4>
+                                        <p class="text-muted mt-2" style="font-size:0.8rem">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            Enrolled: ${Utils.formatDate(e.enrollmentDate)}
+                                        </p>
+                                    </div>`).join('')}
+                            </div>`;
+                    } else {
+                        document.getElementById('dashboard-content').innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-icon"><i class="fas fa-book-open"></i></div>
+                                <p>You're not enrolled in any courses yet.</p>
+                                <a href="/courses.html" class="btn btn-primary mt-4">Browse Courses</a>
+                            </div>`;
+                    }
+                } else {
+                    document.getElementById('stat-enrollments').textContent = '–';
+                    document.getElementById('stat-enrollments-label').textContent = user.role === 'Instructor' ? 'Your Courses' : 'All Enrollments';
+
+                    document.getElementById('dashboard-content').innerHTML = `
+                        <div class="grid grid-cols-3 stagger-children">
+                            ${courses.map(c => `
+                                <div class="glass-card animate-fade-in">
+                                    <h4>${Utils.escapeHtml(c.title)}</h4>
+                                    <p class="text-muted mt-2" style="font-size:0.8rem">${c.credits} Credits</p>
+                                    <p class="text-muted" style="font-size:0.8rem">Instructor: ${Utils.escapeHtml(c.instructorName || 'TBA')}</p>
+                                </div>`).join('')}
+                        </div>`;
+                }
+            } catch (err) {
+                document.getElementById('dashboard-content').innerHTML = `
+                    <div class="empty-state"><p style="color:var(--error-color)">${Utils.escapeHtml(err.message)}</p></div>`;
+            }
+        }
+    </script>
+</body>
+</html>

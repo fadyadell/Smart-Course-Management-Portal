@@ -9,12 +9,13 @@ using SmartCourseManagement.API.Models;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace SmartCourseManagement.API.Services
 {
     /// <summary>
-    /// Handles user registration, login, and JWT token generation.
+    /// Handles user registration, login, JWT token generation, and refresh token management.
     /// Injected via DI — does NOT expose DbContext to controllers.
     /// </summary>
     public class AuthService : IAuthService
@@ -28,7 +29,7 @@ namespace SmartCourseManagement.API.Services
             _configuration = configuration;
         }
 
-        /// <summary>Registers a new user and returns a JWT token.</summary>
+        /// <summary>Registers a new user and returns a JWT token + refresh token.</summary>
         public async Task<AuthResponseDto> RegisterAsync(UserRegisterDto registerDto)
         {
             // Check for duplicate email
@@ -59,10 +60,12 @@ namespace SmartCourseManagement.API.Services
             await _context.SaveChangesAsync();
 
             var token = GenerateJwtToken(user);
+            var refreshToken = await CreateRefreshTokenAsync(user.Id);
 
             return new AuthResponseDto
             {
                 Token = token,
+                RefreshToken = refreshToken,
                 User = new UserReadDto
                 {
                     Id = user.Id,
@@ -73,7 +76,7 @@ namespace SmartCourseManagement.API.Services
             };
         }
 
-        /// <summary>Authenticates a user and returns a JWT token if credentials are valid.</summary>
+        /// <summary>Authenticates a user and returns a JWT token + refresh token if credentials are valid.</summary>
         public async Task<AuthResponseDto> LoginAsync(LoginDto loginDto)
         {
             // Use AsNoTracking for read-only query
@@ -85,10 +88,47 @@ namespace SmartCourseManagement.API.Services
                 return null;
 
             var token = GenerateJwtToken(user);
+            var refreshToken = await CreateRefreshTokenAsync(user.Id);
 
             return new AuthResponseDto
             {
                 Token = token,
+                RefreshToken = refreshToken,
+                User = new UserReadDto
+                {
+                    Id = user.Id,
+                    Name = user.Name,
+                    Email = user.Email,
+                    Role = user.Role
+                }
+            };
+        }
+
+        /// <summary>
+        /// Validates a refresh token and issues a new JWT + refresh token pair.
+        /// The old refresh token is revoked (rotation).
+        /// </summary>
+        public async Task<AuthResponseDto> RefreshTokenAsync(string refreshToken)
+        {
+            var storedToken = await _context.RefreshTokens
+                .Include(rt => rt.User)
+                .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
+
+            if (storedToken == null || storedToken.IsRevoked || storedToken.ExpiryDate < DateTime.UtcNow)
+                throw new UnauthorizedAccessException("Invalid or expired refresh token.");
+
+            // Revoke old token
+            storedToken.IsRevoked = true;
+            await _context.SaveChangesAsync();
+
+            var user = storedToken.User;
+            var newToken = GenerateJwtToken(user);
+            var newRefreshToken = await CreateRefreshTokenAsync(user.Id);
+
+            return new AuthResponseDto
+            {
+                Token = newToken,
+                RefreshToken = newRefreshToken,
                 User = new UserReadDto
                 {
                     Id = user.Id,
@@ -113,7 +153,7 @@ namespace SmartCourseManagement.API.Services
 
         /// <summary>
         /// Generates a JWT token containing NameIdentifier, Email, Name, and Role claims.
-        /// The role claim is critical for role-based authorization.
+        /// Expiry: 15 minutes (as per enterprise token refresh pattern).
         /// </summary>
         private string GenerateJwtToken(User user)
         {
@@ -132,15 +172,40 @@ namespace SmartCourseManagement.API.Services
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+            var expiry = int.TryParse(_configuration["Jwt:ExpiryMinutes"], out var minutes) ? minutes : 15;
+
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(24),
+                expires: DateTime.UtcNow.AddMinutes(expiry),
                 signingCredentials: creds
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        /// <summary>Creates and stores a new refresh token for the given user (7-day expiry).</summary>
+        private async Task<string> CreateRefreshTokenAsync(int userId)
+        {
+            var tokenBytes = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(tokenBytes);
+            var tokenString = Convert.ToBase64String(tokenBytes);
+
+            var refreshToken = new RefreshToken
+            {
+                UserId = userId,
+                Token = tokenString,
+                ExpiryDate = DateTime.UtcNow.AddDays(7),
+                IsRevoked = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.RefreshTokens.Add(refreshToken);
+            await _context.SaveChangesAsync();
+
+            return tokenString;
         }
     }
 }

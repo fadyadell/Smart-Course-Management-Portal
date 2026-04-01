@@ -15,7 +15,7 @@ namespace SmartCourseManagement.API.Controllers
     /// - DELETE unenroll: Admin or Student
     /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [Authorize]
     public class EnrollmentsController : ControllerBase
     {

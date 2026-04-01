@@ -7,11 +7,11 @@ using SmartCourseManagement.API.Services;
 namespace SmartCourseManagement.API.Controllers
 {
     /// <summary>
-    /// Handles user registration and login.
+    /// Handles user registration, login, and token refresh.
     /// Returns a JWT token that must be sent in the Authorization: Bearer header for protected endpoints.
     /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/auth")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
@@ -28,7 +28,7 @@ namespace SmartCourseManagement.API.Controllers
         /// <remarks>
         /// Sample request:
         ///
-        ///     POST /api/auth/register
+        ///     POST /api/v1/auth/register
         ///     {
         ///         "name": "Alice Smith",
         ///         "email": "alice@example.com",
@@ -55,12 +55,12 @@ namespace SmartCourseManagement.API.Controllers
         }
 
         /// <summary>
-        /// Login and receive a JWT token. Include the token as Authorization: Bearer {token}.
+        /// Login and receive a JWT token + refresh token. Include the JWT as Authorization: Bearer {token}.
         /// </summary>
         /// <remarks>
         /// Sample request:
         ///
-        ///     POST /api/auth/login
+        ///     POST /api/v1/auth/login
         ///     {
         ///         "email": "alice@example.com",
         ///         "password": "Secret123"
@@ -77,6 +77,26 @@ namespace SmartCourseManagement.API.Controllers
                 return Unauthorized(new { message = "Invalid email or password." });
 
             return Ok(response);
+        }
+
+        /// <summary>
+        /// Refresh an expired JWT token using a valid refresh token.
+        /// Returns a new JWT + new refresh token; invalidates the old refresh token.
+        /// </summary>
+        [HttpPost("refresh")]
+        [ProducesResponseType(typeof(AuthResponseDto), 200)]
+        [ProducesResponseType(401)]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto request)
+        {
+            try
+            {
+                var response = await _authService.RefreshTokenAsync(request.RefreshToken);
+                return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
         }
     }
 }

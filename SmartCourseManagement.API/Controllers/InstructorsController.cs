@@ -14,7 +14,7 @@ namespace SmartCourseManagement.API.Controllers
     /// - PUT profile: Instructor only (updates their own profile via JWT claim)
     /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [Authorize]
     public class InstructorsController : ControllerBase
     {

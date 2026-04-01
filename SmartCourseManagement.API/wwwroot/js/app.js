@@ -1,23 +1,27 @@
 /**
  * SMART COURSE MANAGEMENT - CORE APPLICATION LOGIC
+ * Depends on: config.js, storage.js, utils.js, ui.js, api.js, auth.js
  */
 
 const app = {
     // STATE
-    user: null,
-    token: localStorage.getItem('token') || null,
-    apiBase: 'https://localhost:7153/api', // Use actual API URL
+    get user() { return Auth.getCurrentUser(); },
+    get token() { return Storage.getToken(); },
 
     // INITIALIZE
     init() {
         try {
             const loader = document.getElementById('loader');
-            if (loader) {
-                loader.classList.add('hidden');
-            }
-            
+            if (loader) loader.classList.add('hidden');
+
             if (this.token) {
-                this.validateToken();
+                const user = this.user;
+                if (user) {
+                    this.setupUI();
+                    this.showPage('dashboard');
+                } else {
+                    this.showPage('login');
+                }
             } else {
                 this.showPage('login');
             }
@@ -32,16 +36,20 @@ const app = {
         e.preventDefault();
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
+        const btn = e.target.querySelector('button[type=submit]');
+        if (btn) btn.disabled = true;
 
         try {
-            const data = await this.fetchWrapper('/Auth/login', 'POST', { email, password });
-            this.token = data.token;
-            localStorage.setItem('token', this.token);
-            localStorage.setItem('user', JSON.stringify(data.user || {}));
-            this.notify('Success', 'Welcome back!');
-            setTimeout(() => this.validateToken(), 500);
+            await Auth.login(email, password);
+            UI.toast('Welcome back!', 'success');
+            setTimeout(() => {
+                this.setupUI();
+                this.showPage('dashboard');
+            }, 500);
         } catch (err) {
-            this.notify('Login Error', err.message || 'Invalid credentials', 'error');
+            UI.toast(err.message || 'Invalid credentials', 'error');
+        } finally {
+            if (btn) btn.disabled = false;
         }
     },
 
@@ -51,74 +59,44 @@ const app = {
         const email = document.getElementById('reg-email').value;
         const password = document.getElementById('reg-password').value;
         const role = document.getElementById('reg-role').value;
+        const btn = e.target.querySelector('button[type=submit]');
+        if (btn) btn.disabled = true;
 
         try {
-            await this.fetchWrapper('/Auth/register', 'POST', { name, email, password, role });
-            this.notify('Success', 'Account created! Please login.');
-            setTimeout(() => this.showPage('login'), 500);
+            await Auth.register(name, email, password, role);
+            UI.toast('Account created! Welcome!', 'success');
+            setTimeout(() => {
+                this.setupUI();
+                this.showPage('dashboard');
+            }, 500);
         } catch (err) {
-            this.notify('Registration Error', err.message || 'Registration failed', 'error');
+            UI.toast(err.message || 'Registration failed', 'error');
+        } finally {
+            if (btn) btn.disabled = false;
         }
     },
 
     logout() {
-        this.token = null;
-        this.user = null;
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        const header = document.getElementById('main-header');
-        if (header) {
-            header.classList.add('hidden');
-        }
-        this.showPage('login');
-    },
-
-    // TOKEN VALIDATION (Simplified - extraction of user info from JWT)
-    validateToken() {
-        if (!this.token) {
-            this.showPage('login');
-            return;
-        }
-        
-        try {
-            const base64Url = this.token.split('.')[1];
-            if (!base64Url) {
-                throw new Error('Invalid token format');
-            }
-
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
-                '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-            ).join(''));
-
-            const payload = JSON.parse(jsonPayload);
-            this.user = {
-                id: payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] || '',
-                name: payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] || 'User',
-                email: payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"] || '',
-                role: payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || 'Student'
-            };
-
-            this.setupUI();
-            this.showPage('dashboard');
-        } catch (e) {
-            console.error('Token validation error:', e);
-            this.logout();
-        }
+        Auth.logout();
     },
 
     // UI CONTROLS
     setupUI() {
         try {
             const header = document.getElementById('main-header');
-            if (header) {
-                header.classList.remove('hidden');
-            }
-            
-            if (this.user && (this.user.role === 'Admin' || this.user.role === 'Instructor')) {
-                const addCourseBtn = document.getElementById('add-course-btn');
-                if (addCourseBtn) {
-                    addCourseBtn.style.display = 'block';
+            if (header) header.classList.remove('hidden');
+
+            const user = this.user;
+            if (user) {
+                const userNameEl = document.getElementById('user-display-name');
+                if (userNameEl) userNameEl.textContent = user.name;
+
+                const roleEl = document.getElementById('user-role-badge');
+                if (roleEl) roleEl.textContent = user.role;
+
+                if (user.role === 'Admin' || user.role === 'Instructor') {
+                    const addCourseBtn = document.getElementById('add-course-btn');
+                    if (addCourseBtn) addCourseBtn.style.display = 'inline-block';
                 }
             }
         } catch (err) {
@@ -129,210 +107,145 @@ const app = {
     showPage(pageId) {
         try {
             const loader = document.getElementById('loader');
-            if (loader) {
-                loader.classList.add('hidden');
-            }
-            
-            const sections = document.querySelectorAll('section');
-            sections.forEach(s => s.classList.add('hidden'));
-            
+            if (loader) loader.classList.add('hidden');
+
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+
             const targetPage = document.getElementById(`${pageId}-page`);
-            if (targetPage) {
-                targetPage.classList.remove('hidden');
-            }
-            
-            if (pageId === 'courses') {
-                this.loadCourses();
-            }
-            if (pageId === 'dashboard') {
-                this.loadDashboardData();
-            }
+            if (targetPage) targetPage.classList.remove('hidden');
+
+            if (pageId === 'courses') this.loadCourses();
+            if (pageId === 'dashboard') this.loadDashboardData();
             if (pageId === 'profile' && this.user) {
-                document.getElementById('profile-name').value = this.user.name || '';
-                document.getElementById('profile-email').value = this.user.email || '';
-                document.getElementById('profile-role').value = this.user.role || '';
+                const nameEl = document.getElementById('profile-name');
+                const emailEl = document.getElementById('profile-email');
+                const roleEl = document.getElementById('profile-role');
+                if (nameEl) nameEl.value = this.user.name || '';
+                if (emailEl) emailEl.value = this.user.email || '';
+                if (roleEl) roleEl.value = this.user.role || '';
             }
         } catch (err) {
             console.error('Error showing page:', err);
         }
     },
 
-    // API WRAPPER
-    async fetchWrapper(endpoint, method = 'GET', body = null) {
-        try {
-            const headers = { 'Content-Type': 'application/json' };
-            if (this.token) {
-                headers['Authorization'] = `Bearer ${this.token}`;
-            }
-
-            const options = { method, headers };
-            if (body) options.body = JSON.stringify(body);
-
-            const response = await fetch(`${this.apiBase}${endpoint}`, options);
-            
-            if (response.status === 401) {
-                localStorage.removeItem('token');
-                this.logout();
-                throw new Error('Session expired. Please login again.');
-            }
-
-            if (response.status === 403) {
-                throw new Error('You do not have permission to access this resource.');
-            }
-
-            if (response.status === 404) {
-                throw new Error('Resource not found.');
-            }
-
-            if (!response.ok && response.status !== 200) {
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || `API Error: ${response.status}`);
-                } else {
-                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
-                }
-            }
-
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.message || 'API request failed');
-                }
-                return data;
-            } else {
-                return response.ok ? { success: true } : null;
-            }
-        } catch (error) {
-            console.error('Fetch error:', error);
-            throw error;
-        }
-    },
-
     // DATA LOADING
-    async loadCourses() {
+    async loadCourses(page = 1, search = '') {
         const grid = document.getElementById('courses-grid');
         if (!grid) return;
-        
-        grid.innerHTML = '<p>Loading courses...</p>';
+
+        UI.showSpinner('courses-grid');
         try {
-            const courses = await this.fetchWrapper('/Courses');
-            if (!Array.isArray(courses) || courses.length === 0) {
-                grid.innerHTML = '<p class="text-muted">No courses available.</p>';
+            const query = search
+                ? `/courses/paged?page=${page}&pageSize=${CONFIG.PAGE_SIZE}&searchTerm=${encodeURIComponent(search)}`
+                : `/courses/paged?page=${page}&pageSize=${CONFIG.PAGE_SIZE}`;
+
+            const result = await Api.get(query);
+            const courses = result.data || [];
+
+            if (!courses.length) {
+                grid.innerHTML = '<p class="text-muted">No courses found.</p>';
                 return;
             }
-            
+
             grid.innerHTML = courses.map(c => `
                 <div class="glass-card animate-fade-in">
-                    <h3>${c.title || 'Course'}</h3>
-                    <p class="text-muted mb-4">${(c.description || '').substring(0, 100)}...</p>
+                    <h3>${Utils.escapeHtml(c.title || 'Course')}</h3>
+                    <p class="text-muted mb-4">${Utils.escapeHtml(Utils.truncate(c.description))}</p>
                     <span class="badge"><i class="fas fa-graduation-cap"></i> ${c.credits || 0} Credits</span>
-                    <div class="course-meta">
-                        ${this.user && this.user.role === 'Student' ? 
-                            `<button class="btn btn-primary btn-sm" onclick="app.enroll(${c.id})">Enroll Now</button>` : 
-                            `<span class="text-muted" style="font-size: 0.85rem;">Course ID: ${c.id}</span>`}
+                    <p class="text-muted" style="font-size:0.8rem;margin-top:0.5rem;">
+                        Instructor: ${Utils.escapeHtml(c.instructorName || 'TBA')}
+                    </p>
+                    <div class="course-meta mt-3">
+                        ${this.user && this.user.role === 'Student'
+                            ? `<button class="btn btn-primary btn-sm" onclick="app.enroll(${c.id})">Enroll Now</button>`
+                            : `<span class="badge">ID: ${c.id}</span>`}
                     </div>
                 </div>
             `).join('');
+
+            if (result.totalPages > 1) {
+                UI.renderPagination('pagination-container', result.page, result.totalPages,
+                    (p) => app.loadCourses(p, search));
+            }
         } catch (err) {
             console.error('Course load error:', err);
-            grid.innerHTML = `<p class="error">Error: ${err.message}</p>`;
+            grid.innerHTML = `<p class="text-muted" style="color:var(--error-color)">Error: ${Utils.escapeHtml(err.message)}</p>`;
         }
     },
 
     async loadDashboardData() {
         const content = document.getElementById('dashboard-content');
         if (!content) return;
-        
-        content.innerHTML = '<p class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading dashboard...</p>';
+
+        UI.showSpinner('dashboard-content');
         try {
-            const courses = await this.fetchWrapper('/Courses');
-            const courseCount = Array.isArray(courses) ? courses.length : 0;
-            
-            const statsCoursesEl = document.getElementById('stats-courses');
-            if (statsCoursesEl) {
-                statsCoursesEl.innerText = `${courseCount} Courses Available`;
-            }
-            
+            const coursesResult = await Api.get('/courses/paged?page=1&pageSize=3');
+            const courses = coursesResult.data || [];
+
             if (this.user && this.user.role === 'Student') {
+                let enrollments = [];
                 try {
-                    const enrollments = await this.fetchWrapper('/Enrollments/my-enrollments');
-                    const enrollmentCount = Array.isArray(enrollments) ? enrollments.length : 0;
-                    
-                    const statsEnrollmentsEl = document.getElementById('stats-enrollments');
-                    if (statsEnrollmentsEl) {
-                        statsEnrollmentsEl.innerText = `${enrollmentCount} Active Sessions`;
+                    enrollments = await Api.get('/enrollments/my-enrollments');
+                } catch { /* not enrolled yet */ }
+
+                const statsEl = document.getElementById('stats-enrollments');
+                if (statsEl) statsEl.textContent = `${(enrollments || []).length} Active Enrollments`;
+
+                content.innerHTML = `
+                    <h3 class="mb-4">My Enrolled Courses</h3>
+                    ${!enrollments || !enrollments.length
+                        ? '<p class="text-muted">You are not enrolled in any courses yet. <a href="#" onclick="app.showPage(\'courses\')">Browse courses</a></p>'
+                        : '<div class="grid grid-cols-3">' + enrollments.map(e => `
+                            <div class="glass-card">
+                                <h4>${Utils.escapeHtml(e.courseTitle || 'Course')}</h4>
+                                <p class="text-muted mt-2" style="font-size:0.85rem">
+                                    Enrolled: ${Utils.formatDate(e.enrollmentDate)}
+                                </p>
+                            </div>`).join('') + '</div>'
                     }
-                    
-                    content.innerHTML = `
-                        <h3 class="mb-4">My Enrolled Courses</h3>
-                        ${enrollmentCount === 0 ? '<p class="text-muted">You are not enrolled in any courses yet.</p>' : ''}
-                        <div class="grid grid-cols-3">
-                            ${Array.isArray(enrollments) ? enrollments.map(e => `
-                                <div class="glass-card" style="padding: 1.5rem;">
-                                    <h4>${e.courseTitle || 'Course'}</h4>
-                                    <p class="text-muted mt-2" style="font-size: 0.85rem;">Enrolled on: ${new Date(e.enrollmentDate).toLocaleDateString()}</p>
-                                </div>
-                            `).join('') : ''}
-                        </div>
-                    `;
-                } catch (enrollErr) {
-                    console.warn('Error loading enrollments:', enrollErr);
-                    content.innerHTML = '<p class="text-muted">You are not enrolled in any courses yet.</p>';
-                }
+                    <h3 class="mt-6 mb-4">Available Courses</h3>
+                    <div class="grid grid-cols-3">
+                        ${courses.map(c => `
+                            <div class="glass-card">
+                                <h4>${Utils.escapeHtml(c.title)}</h4>
+                                <p class="text-muted" style="font-size:0.85rem">${c.credits} Credits</p>
+                                <button class="btn btn-primary btn-sm mt-2" onclick="app.enroll(${c.id})">Enroll</button>
+                            </div>`).join('')}
+                    </div>`;
             } else {
-                const statsEnrollmentsEl = document.getElementById('stats-enrollments');
-                if (statsEnrollmentsEl) {
-                    statsEnrollmentsEl.innerText = 'Manage all students';
-                }
-                content.innerHTML = `<p class="text-muted">Welcome to the Instructor Dashboard. Use the Courses tab to manage your courses and students.</p>`;
+                content.innerHTML = `
+                    <h3 class="mb-4">Recent Courses</h3>
+                    <div class="grid grid-cols-3">
+                        ${courses.map(c => `
+                            <div class="glass-card">
+                                <h4>${Utils.escapeHtml(c.title)}</h4>
+                                <p class="text-muted" style="font-size:0.85rem">${c.credits} Credits</p>
+                            </div>`).join('')}
+                    </div>`;
             }
         } catch (err) {
-            console.error('Dashboard load error:', err);
-            content.innerHTML = `<p class="text-muted" style="color: var(--error-color);">Failed to load data: ${err.message}</p>`;
+            console.error('Dashboard error:', err);
+            content.innerHTML = `<p class="text-muted">Failed to load data: ${Utils.escapeHtml(err.message)}</p>`;
         }
     },
 
     async enroll(courseId) {
         try {
-            if (!this.user || !this.user.id) {
-                throw new Error('User not authenticated');
-            }
-            
-            await this.fetchWrapper('/Enrollments', 'POST', { 
-                studentId: parseInt(this.user.id), 
-                courseId: courseId 
-            });
-            
-            this.notify('Success', 'Enrolled successfully!');
+            if (!this.user || !this.user.id) throw new Error('User not authenticated');
+            await Api.post('/enrollments', { studentId: parseInt(this.user.id), courseId });
+            UI.toast('Enrolled successfully!', 'success');
             this.loadDashboardData();
         } catch (err) {
-            this.notify('Enrollment Error', err.message || 'Failed to enroll', 'error');
+            UI.toast(err.message || 'Failed to enroll', 'error');
         }
     },
 
-    // UTILS
+    // Legacy notify support
     notify(title, message, type = 'success') {
-        try {
-            const area = document.getElementById('notification-area');
-            if (!area) return;
-            
-            const note = document.createElement('div');
-            note.className = `glass-card mt-4 animate-fade-in notification ${type}`;
-            note.style.borderLeft = `5px solid ${type === 'success' ? 'var(--success-color)' : 'var(--error-color)'}`;
-            note.innerHTML = `<strong>${title}:</strong> ${message}`;
-            area.appendChild(note);
-            
-            setTimeout(() => {
-                if (note.parentNode) {
-                    note.remove();
-                }
-            }, 4000);
-        } catch (err) {
-            console.error('Notification error:', err);
-        }
+        UI.toast(`${title}: ${message}`, type);
     }
 };
 
 window.onload = () => app.init();
+

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Courses – Smart Course Management Portal</title>
+    <link rel="stylesheet" href="css/dark-theme.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container nav-content">
+            <div class="logo"><i class="fas fa-university"></i> SmartCourse</div>
+            <nav class="nav-links">
+                <a href="/dashboard.html">Dashboard</a>
+                <a href="/courses.html" class="active">Courses</a>
+                <a href="/profile.html">Profile</a>
+                <span class="user-badge">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="user-display-name">User</span>
+                </span>
+                <button class="btn btn-outline btn-sm" onclick="Auth.logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding-top:2rem;padding-bottom:4rem;">
+        <div class="section-header mb-6">
+            <h1 class="section-title">Browse Courses</h1>
+            <div id="create-course-btn-wrap" style="display:none;">
+                <button class="btn btn-primary" onclick="showCreateModal()">
+                    <i class="fas fa-plus"></i> Add Course
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter / Search Bar -->
+        <div class="filter-bar mb-6">
+            <div class="form-group">
+                <label>Search</label>
+                <div class="search-bar">
+                    <span class="search-icon"><i class="fas fa-search"></i></span>
+                    <input type="text" id="search-input" placeholder="Search by title or description...">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Filter by Credits</label>
+                <select id="filter-credits">
+                    <option value="">All Credits</option>
+                    <option value="1">1 Credit</option>
+                    <option value="2">2 Credits</option>
+                    <option value="3">3 Credits</option>
+                    <option value="4">4 Credits</option>
+                    <option value="5">5+ Credits</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Sort By</label>
+                <select id="sort-by">
+                    <option value="">Default</option>
+                    <option value="title">Title A–Z</option>
+                    <option value="credits">Credits (Low–High)</option>
+                    <option value="credits_desc">Credits (High–Low)</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="loadCourses(1)">
+                <i class="fas fa-filter"></i> Apply
+            </button>
+        </div>
+
+        <!-- Results count -->
+        <p class="text-muted mb-4" id="results-count" style="font-size:0.875rem;"></p>
+
+        <!-- Courses Grid -->
+        <div id="courses-grid" class="grid grid-cols-3 stagger-children">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination-container" class="mt-6"></div>
+    </main>
+
+    <!-- Create Course Modal -->
+    <div id="create-modal" class="modal-overlay hidden">
+        <div class="modal-box glass-card" style="max-width:500px;">
+            <h3 class="mb-6"><i class="fas fa-plus"></i> Create New Course</h3>
+            <form id="create-course-form">
+                <div class="form-group">
+                    <label>Course Title</label>
+                    <input type="text" id="new-title" required placeholder="e.g. Introduction to ASP.NET Core">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="new-description" rows="3" placeholder="Course description..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Credits (1–10)</label>
+                    <input type="number" id="new-credits" required min="1" max="10" value="3">
+                </div>
+                <div class="form-group">
+                    <label>Instructor ID</label>
+                    <input type="number" id="new-instructor" required min="1">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="hideCreateModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Course</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        const user = Auth.requireAuth();
+        let currentPage = 1;
+
+        if (user) {
+            document.getElementById('user-display-name').textContent = user.name;
+            if (user.role === 'Admin' || user.role === 'Instructor') {
+                document.getElementById('create-course-btn-wrap').style.display = 'block';
+            }
+        }
+
+        // Debounced search
+        const debouncedSearch = Utils.debounce(() => loadCourses(1), CONFIG.DEBOUNCE_DELAY);
+        document.getElementById('search-input').addEventListener('input', debouncedSearch);
+        document.getElementById('filter-credits').addEventListener('change', () => loadCourses(1));
+        document.getElementById('sort-by').addEventListener('change', () => loadCourses(1));
+
+        async function loadCourses(page = 1) {
+            currentPage = page;
+            const grid = document.getElementById('courses-grid');
+            grid.innerHTML = '<div class="spinner"></div>';
+
+            const search  = document.getElementById('search-input').value.trim();
+            const credits = document.getElementById('filter-credits').value;
+            const sortBy  = document.getElementById('sort-by').value;
+
+            const params = new URLSearchParams({
+                page, pageSize: CONFIG.PAGE_SIZE,
+                searchTerm: search, filter: credits, sortBy
+            });
+
+            try {
+                const result = await Api.get(`/courses/paged?${params}`);
+                const courses = result.data || [];
+                const total   = result.total || 0;
+
+                document.getElementById('results-count').textContent =
+                    `Showing ${courses.length} of ${total} courses`;
+
+                if (!courses.length) {
+                    grid.innerHTML = `
+                        <div class="empty-state" style="grid-column:1/-1">
+                            <div class="empty-icon"><i class="fas fa-search"></i></div>
+                            <p>No courses found matching your criteria.</p>
+                            <button class="btn btn-outline mt-4" onclick="document.getElementById('search-input').value='';loadCourses(1)">
+                                Clear Filters
+                            </button>
+                        </div>`;
+                    return;
+                }
+
+                grid.innerHTML = courses.map(c => `
+                    <div class="course-card animate-fade-in">
+                        <div>
+                            <h3>${Utils.escapeHtml(c.title)}</h3>
+                            <p class="text-muted mt-2" style="font-size:0.875rem;line-height:1.5">
+                                ${Utils.escapeHtml(Utils.truncate(c.description, 120))}
+                            </p>
+                        </div>
+                        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
+                            <span class="badge"><i class="fas fa-star"></i> ${c.credits} Credits</span>
+                            <span class="badge badge-info"><i class="fas fa-chalkboard-teacher"></i> ${Utils.escapeHtml(c.instructorName || 'TBA')}</span>
+                        </div>
+                        <div class="course-meta">
+                            ${user && user.role === 'Student'
+                                ? `<button class="btn btn-primary btn-sm" onclick="enrollIn(${c.id})">
+                                    <i class="fas fa-plus"></i> Enroll
+                                   </button>`
+                                : `<span class="badge">ID: ${c.id}</span>`}
+                            ${(user && (user.role === 'Admin' || user.role === 'Instructor'))
+                                ? `<button class="btn btn-danger btn-sm" onclick="deleteCourse(${c.id})">
+                                    <i class="fas fa-trash"></i>
+                                   </button>`
+                                : ''}
+                        </div>
+                    </div>`).join('');
+
+                // Render pagination
+                UI.renderPagination('pagination-container', page, result.totalPages, loadCourses);
+
+            } catch (err) {
+                grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+                    <p style="color:var(--error-color)">${Utils.escapeHtml(err.message)}</p></div>`;
+            }
+        }
+
+        async function enrollIn(courseId) {
+            if (!user) return;
+            try {
+                await Api.post('/enrollments', { studentId: parseInt(user.id), courseId });
+                UI.toast('Enrolled successfully!', 'success');
+            } catch (err) {
+                UI.toast(err.message, 'error');
+            }
+        }
+
+        async function deleteCourse(id) {
+            const confirmed = await UI.confirm('Delete Course', 'Are you sure you want to delete this course?');
+            if (!confirmed) return;
+            try {
+                await Api.delete(`/courses/${id}`);
+                UI.toast('Course deleted.', 'success');
+                loadCourses(currentPage);
+            } catch (err) {
+                UI.toast(err.message, 'error');
+            }
+        }
+
+        function showCreateModal() {
+            document.getElementById('create-modal').classList.remove('hidden');
+        }
+        function hideCreateModal() {
+            document.getElementById('create-modal').classList.add('hidden');
+            document.getElementById('create-course-form').reset();
+        }
+
+        document.getElementById('create-course-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await Api.post('/courses', {
+                    title:        document.getElementById('new-title').value,
+                    description:  document.getElementById('new-description').value,
+                    credits:      parseInt(document.getElementById('new-credits').value),
+                    instructorId: parseInt(document.getElementById('new-instructor').value)
+                });
+                UI.toast('Course created!', 'success');
+                hideCreateModal();
+                loadCourses(1);
+            } catch (err) {
+                UI.toast(err.message, 'error');
+            }
+        });
+
+        // Initial load
+        loadCourses(1);
+    </script>
+</body>
+</html>

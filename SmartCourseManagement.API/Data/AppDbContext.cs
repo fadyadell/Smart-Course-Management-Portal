@@ -1,3 +1,8 @@
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using SmartCourseManagement.API.Models;
 
@@ -5,17 +10,22 @@ namespace SmartCourseManagement.API.Data
 {
     /// <summary>
     /// Entity Framework Core DbContext. Configures all entity relationships using Fluent API.
+    /// Supports soft delete filtering and automatic audit field population.
     /// </summary>
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public AppDbContext(DbContextOptions<AppDbContext> options, IHttpContextAccessor httpContextAccessor) : base(options)
         {
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public DbSet<User> Users { get; set; }
         public DbSet<InstructorProfile> InstructorProfiles { get; set; }
         public DbSet<Course> Courses { get; set; }
         public DbSet<Enrollment> Enrollments { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -57,6 +67,15 @@ namespace SmartCourseManagement.API.Data
                 .HasForeignKey(e => e.CourseId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // =============================================
+            // ONE-TO-MANY: User -> RefreshTokens
+            // =============================================
+            modelBuilder.Entity<RefreshToken>()
+                .HasOne(rt => rt.User)
+                .WithMany()
+                .HasForeignKey(rt => rt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             // Unique email constraint
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
@@ -90,6 +109,51 @@ namespace SmartCourseManagement.API.Data
                 new Course { Id = 2, Title = "Advanced Entity Framework Core", Description = "Master complex relationships and performance tuning.", Credits = 4, InstructorId = 1 },
                 new Course { Id = 3, Title = "Frontend Mastery with Vanilla JS", Description = "Build responsive and vibrant SPAs without heavy frameworks.", Credits = 3, InstructorId = 1 }
             );
+        }
+
+        /// <summary>
+        /// Overrides SaveChangesAsync to auto-populate audit fields and apply soft-delete logic.
+        /// </summary>
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var currentUser = _httpContextAccessor?.HttpContext?.User?.Identity?.Name ?? "System";
+            var now = DateTime.UtcNow;
+
+            foreach (var entry in ChangeTracker.Entries())
+            {
+                if (entry.Entity is User user)
+                {
+                    if (entry.State == EntityState.Added)
+                    {
+                        user.CreatedAt = now;
+                        user.UpdatedAt = now;
+                        user.CreatedBy = currentUser;
+                        user.UpdatedBy = currentUser;
+                    }
+                    else if (entry.State == EntityState.Modified)
+                    {
+                        user.UpdatedAt = now;
+                        user.UpdatedBy = currentUser;
+                    }
+                }
+                else if (entry.Entity is Course course)
+                {
+                    if (entry.State == EntityState.Added)
+                    {
+                        course.CreatedAt = now;
+                        course.UpdatedAt = now;
+                        course.CreatedBy = currentUser;
+                        course.UpdatedBy = currentUser;
+                    }
+                    else if (entry.State == EntityState.Modified)
+                    {
+                        course.UpdatedAt = now;
+                        course.UpdatedBy = currentUser;
+                    }
+                }
+            }
+
+            return await base.SaveChangesAsync(cancellationToken);
         }
     }
 }

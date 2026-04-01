@@ -14,7 +14,7 @@ namespace SmartCourseManagement.API.Controllers
     /// - DELETE: Admin only
     /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [Authorize] // Require authentication for all endpoints in this controller
     public class CoursesController : ControllerBase
     {
@@ -32,6 +32,18 @@ namespace SmartCourseManagement.API.Controllers
         {
             var courses = await _courseService.GetAllCoursesAsync();
             return Ok(courses);
+        }
+
+        /// <summary>
+        /// Get paginated courses with optional search, filter, and sort.
+        /// Query parameters: page, pageSize, searchTerm, sortBy, filter (credits value)
+        /// </summary>
+        [HttpGet("paged")]
+        [ProducesResponseType(typeof(PagedResponse<CourseReadDto>), 200)]
+        public async Task<IActionResult> GetPaged([FromQuery] PagedRequest request)
+        {
+            var result = await _courseService.GetCoursesAsync(request);
+            return Ok(result);
         }
 
         /// <summary>Get a course by ID.</summary>

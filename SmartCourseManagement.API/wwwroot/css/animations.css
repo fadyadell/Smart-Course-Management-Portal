@@ -1,0 +1,222 @@
+/* animations.css - Transitions, spinners, and effects */
+
+/* ============================================
+   KEYFRAMES
+   ============================================ */
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-30px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+}
+
+@keyframes shimmer {
+    0%   { background-position: -468px 0; }
+    100% { background-position: 468px 0; }
+}
+
+@keyframes toastSlideIn {
+    from { opacity: 0; transform: translateX(100%); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toastSlideOut {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(100%); }
+}
+
+/* ============================================
+   ANIMATION UTILITY CLASSES
+   ============================================ */
+
+.animate-fade-in    { animation: fadeIn 0.3s cubic-bezier(0.4,0,0.2,1) both; }
+.animate-slide-left { animation: slideInLeft 0.3s cubic-bezier(0.4,0,0.2,1) both; }
+.animate-slide-right{ animation: slideInRight 0.3s cubic-bezier(0.4,0,0.2,1) both; }
+.animate-scale-in   { animation: scaleIn 0.3s cubic-bezier(0.4,0,0.2,1) both; }
+
+/* Stagger children */
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.10s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.20s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+
+/* ============================================
+   SPINNER
+   ============================================ */
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(212, 175, 55, 0.2);
+    border-top-color: var(--primary-color, #d4af37);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 2rem auto;
+}
+
+.spinner-sm {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+}
+
+.spinner-inline {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+}
+
+/* ============================================
+   SKELETON LOADER
+   ============================================ */
+
+.skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+    background-size: 400% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-text  { height: 1rem; margin-bottom: 0.5rem; }
+.skeleton-title { height: 1.5rem; width: 60%; margin-bottom: 1rem; }
+.skeleton-card  { height: 150px; border-radius: var(--radius, 12px); }
+
+/* ============================================
+   TOAST NOTIFICATIONS
+   ============================================ */
+
+#toast-container {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 360px;
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1.25rem;
+    border-radius: 10px;
+    backdrop-filter: blur(16px);
+    font-size: 0.9rem;
+    font-weight: 500;
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: opacity 0.3s cubic-bezier(0.4,0,0.2,1), transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+.toast.toast-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.toast-success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); color: #6ee7b7; }
+.toast-error   { background: rgba(239,68,68,0.15);  border: 1px solid rgba(239,68,68,0.4);  color: #fca5a5; }
+.toast-warning { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); color: #fcd34d; }
+.toast-info    { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.4); color: #93c5fd; }
+
+.toast-success .toast-icon { background: rgba(16,185,129,0.3); }
+.toast-error   .toast-icon { background: rgba(239,68,68,0.3); }
+.toast-warning .toast-icon { background: rgba(245,158,11,0.3); }
+.toast-info    .toast-icon { background: rgba(59,130,246,0.3); }
+
+/* ============================================
+   MODAL OVERLAY
+   ============================================ */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9000;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-box {
+    max-width: 440px;
+    width: 90%;
+    animation: scaleIn 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+/* ============================================
+   HOVER EFFECTS
+   ============================================ */
+
+.hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+}
+
+.hover-glow:hover {
+    box-shadow: 0 0 20px rgba(212,175,55,0.3);
+}
+
+/* ============================================
+   PAGE TRANSITIONS
+   ============================================ */
+
+section {
+    transition: opacity 0.2s ease;
+}
+section.hidden {
+    display: none;
+}
