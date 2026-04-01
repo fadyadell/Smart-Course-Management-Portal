@@ -7,42 +7,26 @@ using SmartCourseManagement.API.Services;
 namespace SmartCourseManagement.API.Controllers
 {
     /// <summary>
-    /// Handles user registration and login.
-    /// Returns a JWT token that must be sent in the Authorization: Bearer header for protected endpoints.
+    /// Handles user registration, login, and JWT refresh token exchange.
+    /// Returns a JWT + refresh token pair on successful auth operations.
     /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
 
-        // Injected via DI — controller does NOT access DbContext directly
         public AuthController(IAuthService authService)
         {
             _authService = authService;
         }
 
-        /// <summary>
-        /// Register a new user. Roles: Admin | Instructor | Student
-        /// </summary>
-        /// <remarks>
-        /// Sample request:
-        ///
-        ///     POST /api/auth/register
-        ///     {
-        ///         "name": "Alice Smith",
-        ///         "email": "alice@example.com",
-        ///         "password": "Secret123",
-        ///         "role": "Student"
-        ///     }
-        ///
-        /// </remarks>
+        /// <summary>Register a new user (Admin | Instructor | Student).</summary>
         [HttpPost("register")]
         [ProducesResponseType(typeof(AuthResponseDto), 200)]
         [ProducesResponseType(400)]
         public async Task<IActionResult> Register([FromBody] UserRegisterDto registerDto)
         {
-            // [ApiController] automatically returns HTTP 400 if model validation fails
             try
             {
                 var response = await _authService.RegisterAsync(registerDto);
@@ -54,19 +38,7 @@ namespace SmartCourseManagement.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Login and receive a JWT token. Include the token as Authorization: Bearer {token}.
-        /// </summary>
-        /// <remarks>
-        /// Sample request:
-        ///
-        ///     POST /api/auth/login
-        ///     {
-        ///         "email": "alice@example.com",
-        ///         "password": "Secret123"
-        ///     }
-        ///
-        /// </remarks>
+        /// <summary>Login and receive a JWT + refresh token pair.</summary>
         [HttpPost("login")]
         [ProducesResponseType(typeof(AuthResponseDto), 200)]
         [ProducesResponseType(401)]
@@ -75,6 +47,22 @@ namespace SmartCourseManagement.API.Controllers
             var response = await _authService.LoginAsync(loginDto);
             if (response == null)
                 return Unauthorized(new { message = "Invalid email or password." });
+
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// Exchange a valid refresh token for a new JWT + new refresh token.
+        /// The old refresh token is invalidated after use.
+        /// </summary>
+        [HttpPost("refresh")]
+        [ProducesResponseType(typeof(AuthResponseDto), 200)]
+        [ProducesResponseType(401)]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto request)
+        {
+            var response = await _authService.RefreshTokenAsync(request.RefreshToken);
+            if (response == null)
+                return Unauthorized(new { message = "Invalid or expired refresh token." });
 
             return Ok(response);
         }

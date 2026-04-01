@@ -1,0 +1,40 @@
+# Build outputs
+bin/
+obj/
+*.user
+*.suo
+
+# Logs
+logs/
+
+# Database
+*.db
+*.sqlite
+*.mdf
+*.ldf
+*.ndf
+
+# Rider / VS
+.idea/
+.vs/
+*.DotSettings.user
+
+# NuGet
+.nuget/
+packages/
+
+# Test results
+TestResults/
+
+# Temp files
+build_*.log
+build_*.txt
+*.log
+run_output.txt
+errs.txt
+readable_err.txt
+error*.log
+final_build.log
+last_err.log
+seed_build_err.log
+full_build*.log

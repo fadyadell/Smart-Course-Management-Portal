@@ -7,18 +7,16 @@ namespace SmartCourseManagement.API.Models
     /// <summary>
     /// Represents a course. One-to-Many with InstructorProfile (instructor teaches many courses).
     /// Many-to-Many with User(Student) via the Enrollment junction entity.
+    /// Inherits audit fields and soft-delete from BaseEntity.
     /// </summary>
-    public class Course
+    public class Course : BaseEntity
     {
-        [Key]
-        public int Id { get; set; }
-
         [Required]
         [MaxLength(200)]
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
 
         [MaxLength(1000)]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         [Range(1, 10)]
         public int Credits { get; set; }
@@ -28,7 +26,7 @@ namespace SmartCourseManagement.API.Models
         public int InstructorId { get; set; }
 
         [ForeignKey("InstructorId")]
-        public InstructorProfile Instructor { get; set; }
+        public InstructorProfile Instructor { get; set; } = null!;
 
         // Many-to-Many (via Enrollment junction): Many students enroll in this course
         public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
