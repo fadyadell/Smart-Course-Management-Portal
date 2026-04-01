@@ -30,6 +30,9 @@ namespace SmartCourseManagement.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("Credits")
                         .HasColumnType("int");
 
@@ -41,10 +44,16 @@ namespace SmartCourseManagement.API.Migrations
                     b.Property<int>("InstructorId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -56,26 +65,35 @@ namespace SmartCourseManagement.API.Migrations
                         new
                         {
                             Id = 1,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Credits = 3,
                             Description = "Learn the basics of building high-performance Web APIs.",
                             InstructorId = 1,
-                            Title = "Introduction to ASP.NET Core"
+                            IsDeleted = false,
+                            Title = "Introduction to ASP.NET Core",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = 2,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Credits = 4,
                             Description = "Master complex relationships and performance tuning.",
                             InstructorId = 1,
-                            Title = "Advanced Entity Framework Core"
+                            IsDeleted = false,
+                            Title = "Advanced Entity Framework Core",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = 3,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Credits = 3,
                             Description = "Build responsive and vibrant SPAs without heavy frameworks.",
                             InstructorId = 1,
-                            Title = "Frontend Mastery with Vanilla JS"
+                            IsDeleted = false,
+                            Title = "Frontend Mastery with Vanilla JS",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 
@@ -143,6 +161,37 @@ namespace SmartCourseManagement.API.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SmartCourseManagement.API.Models.RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("SmartCourseManagement.API.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -150,6 +199,9 @@ namespace SmartCourseManagement.API.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -170,6 +222,9 @@ namespace SmartCourseManagement.API.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
@@ -181,10 +236,12 @@ namespace SmartCourseManagement.API.Migrations
                         new
                         {
                             Id = 1,
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Email = "instructor@example.com",
                             Name = "Dr. Jane Smith",
                             PasswordHash = "$2a$11$S8mJpx/o7u6H1iU96J10nuvL1gYhX6A9N5X/B8p3bY7fF.E2f/v1i",
-                            Role = "Instructor"
+                            Role = "Instructor",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 
@@ -229,6 +286,17 @@ namespace SmartCourseManagement.API.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SmartCourseManagement.API.Models.RefreshToken", b =>
+                {
+                    b.HasOne("SmartCourseManagement.API.Models.User", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SmartCourseManagement.API.Models.Course", b =>
                 {
                     b.Navigation("Enrollments");
@@ -243,8 +311,9 @@ namespace SmartCourseManagement.API.Migrations
                 {
                     b.Navigation("Enrollments");
 
-                    b.Navigation("InstructorProfile")
-                        .IsRequired();
+                    b.Navigation("InstructorProfile");
+
+                    b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618
         }
