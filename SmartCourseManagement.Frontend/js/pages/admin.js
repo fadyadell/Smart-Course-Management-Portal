@@ -51,16 +51,30 @@
         tbody.innerHTML = users.map((u, i) => `
             <tr>
                 <td data-label="#">${(usersState.page - 1) * usersState.pageSize + i + 1}</td>
-                <td data-label="Name"><strong>${u.name}</strong></td>
-                <td data-label="Email"><span class="text-muted">${u.email}</span></td>
+                <td data-label="Name"><strong>${escapeHtml(u.name)}</strong></td>
+                <td data-label="Email"><span class="text-muted">${escapeHtml(u.email)}</span></td>
                 <td data-label="Role">${Formatters.badgeForRole(u.role)}</td>
                 <td data-label="Actions">
                     <div class="table-actions">
-                        <button class="btn btn-sm btn-outline-primary" onclick="openEditUser(${u.id},'${u.name.replace(/'/g,"\\'")}','${u.email}','${u.role}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${u.id})"><i class="fas fa-trash"></i></button>
+                        <button class="btn btn-sm btn-outline-primary js-edit-user"
+                            data-id="${u.id}"
+                            data-name="${escapeAttr(u.name)}"
+                            data-email="${escapeAttr(u.email)}"
+                            data-role="${escapeAttr(u.role)}"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-outline-danger js-delete-user"
+                            data-id="${u.id}"><i class="fas fa-trash"></i></button>
                     </div>
                 </td>
             </tr>`).join('');
+
+        // Attach event handlers using data attributes to avoid XSS via string interpolation
+        tbody.querySelectorAll('.js-edit-user').forEach(btn => {
+            btn.addEventListener('click', () =>
+                openEditUser(Number(btn.dataset.id), btn.dataset.name, btn.dataset.email, btn.dataset.role));
+        });
+        tbody.querySelectorAll('.js-delete-user').forEach(btn => {
+            btn.addEventListener('click', () => deleteUser(Number(btn.dataset.id)));
+        });
     }
 
     function renderUsersPagination(result) {

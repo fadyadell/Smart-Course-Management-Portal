@@ -6,6 +6,28 @@ function debounce(fn, delay) {
     };
 }
 
+/** Escape a string for safe insertion as HTML text content. */
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/** Escape a string for safe use in an HTML attribute value (double-quoted). */
+function escapeAttr(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
 function showToast(message, type = 'info') {
     let container = document.getElementById('toast-container');
     if (!container) {
@@ -17,7 +39,21 @@ function showToast(message, type = 'info') {
     const icons = { success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i><span>${message}</span><button class="toast-close" onclick="this.parentElement.remove()">&times;</button>`;
+
+    const icon = document.createElement('i');
+    icon.className = `fas ${icons[type] || icons.info}`;
+
+    const text = document.createElement('span');
+    text.textContent = message; // textContent avoids XSS – no HTML interpretation
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'toast-close';
+    closeBtn.textContent = '\u00d7';
+    closeBtn.onclick = () => toast.remove();
+
+    toast.appendChild(icon);
+    toast.appendChild(text);
+    toast.appendChild(closeBtn);
     container.appendChild(toast);
 
     requestAnimationFrame(() => toast.classList.add('toast-show'));
