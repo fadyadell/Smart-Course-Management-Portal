@@ -320,9 +320,6 @@ D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\rj
 D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
 D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\scopedcss\bundle\SmartCourseManagement.API.styles.css
-D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\compressed\fjkbe1vce2-{0}-fxja3mn2e1-fxja3mn2e1.gz
-D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\compressed\yd5p9nn3i4-{0}-qhqt9v0e48-qhqt9v0e48.gz
-D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\compressed\ftka1y6o4a-{0}-x2svsnyc26-x2svsnyc26.gz
 D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\staticwebassets.build.json
 D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\staticwebassets.build.json.cache
 D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\staticwebassets.development.json
@@ -334,3 +331,6 @@ D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\re
 D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\SmartCourseManagement.API.pdb
 D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\SmartCourseManagement.API.genruntimeconfig.cache
 D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\ref\SmartCourseManagement.API.dll
+D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\compressed\fjkbe1vce2-{0}-f5a3fylfx4-f5a3fylfx4.gz
+D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\compressed\yd5p9nn3i4-{0}-0d46vflt2y-0d46vflt2y.gz
+D:\Smart-Course-Management-Portal\SmartCourseManagement.API\obj\Debug\net10.0\compressed\ftka1y6o4a-{0}-o6kbnoegej-o6kbnoegej.gz
