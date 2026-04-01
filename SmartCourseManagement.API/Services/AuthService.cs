@@ -48,7 +48,12 @@ namespace SmartCourseManagement.API.Services
             // Auto-create InstructorProfile when registering as an Instructor
             if (user.Role == "Instructor")
             {
-                _context.InstructorProfiles.Add(new InstructorProfile { User = user });
+                _context.InstructorProfiles.Add(new InstructorProfile 
+                { 
+                    User = user,
+                    Biography = string.Empty,
+                    OfficeLocation = string.Empty
+                });
             }
 
             await _context.SaveChangesAsync();

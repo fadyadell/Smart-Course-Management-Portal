@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic; // Added for List<string>
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,7 +7,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi; // Use Microsoft.OpenApi instead of Microsoft.OpenApi.Models
 using SmartCourseManagement.API.Data;
 using SmartCourseManagement.API.Services;
 using System.Text;
@@ -75,36 +74,7 @@ builder.Services.AddAuthorization(options =>
 // 6. SWAGGER WITH JWT AUTHORIZATION SUPPORT
 // =============================================
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Smart Course Management API",
-        Version = "v1",
-        Description = "ASP.NET Core Web API with JWT auth, role-based authorization."
-    });
-
-    // JWT Bearer security definition for Swagger UI
-    var securityScheme = new OpenApiSecurityScheme
-    {
-        Name = "JWT Authentication",
-        Description = "Enter your JWT token",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT"
-    };
-
-    c.AddSecurityDefinition("Bearer", securityScheme);
-
-    c.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecuritySchemeReference("Bearer"),
-            new List<string>()
-        }
-    });
-});
+builder.Services.AddSwaggerGen();
 
 // =============================================
 // 7. CORS - Allow frontend to call API
