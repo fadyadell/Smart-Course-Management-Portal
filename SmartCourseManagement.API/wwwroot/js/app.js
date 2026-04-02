@@ -6,7 +6,7 @@ const app = {
     // STATE
     user: null,
     token: localStorage.getItem('token') || null,
-    apiBase: 'https://localhost:7153/api', // Use actual API URL
+    apiBase: (window.__API_BASE_URL__ || 'http://localhost:5202/api').replace(/\/$/, ''),
 
     // INITIALIZE
     init() {
@@ -35,8 +35,11 @@ const app = {
 
         try {
             const data = await this.fetchWrapper('/Auth/login', 'POST', { email, password });
-            this.token = data.token;
+            this.token = data.accessToken || data.token;
             localStorage.setItem('token', this.token);
+            if (data.refreshToken) {
+                localStorage.setItem('refreshToken', data.refreshToken);
+            }
             localStorage.setItem('user', JSON.stringify(data.user || {}));
             this.notify('Success', 'Welcome back!');
             setTimeout(() => this.validateToken(), 500);
@@ -168,7 +171,12 @@ const app = {
             const options = { method, headers };
             if (body) options.body = JSON.stringify(body);
 
-            const response = await fetch(`${this.apiBase}${endpoint}`, options);
+            let response;
+            try {
+                response = await fetch(`${this.apiBase}${endpoint}`, options);
+            } catch (error) {
+                throw new Error(`Unable to reach the API at ${this.apiBase}. Make sure the backend is running.`);
+            }
             
             if (response.status === 401) {
                 localStorage.removeItem('token');

@@ -78,5 +78,35 @@ namespace SmartCourseManagement.API.Controllers
 
             return Ok(response);
         }
+
+        /// <summary>
+        /// Refresh the access token using a valid refresh token.
+        /// Call this endpoint when the access token (JWT) expires.
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     POST /api/auth/refresh
+        ///     {
+        ///         "refreshToken": "SGVsbG8gV29ybGQgUzIgVG9rZW4h..."
+        ///     }
+        ///
+        /// Returns new access token and expiry time.
+        /// </remarks>
+        [HttpPost("refresh")]
+        [ProducesResponseType(typeof(RefreshTokenResponseDto), 200)]
+        [ProducesResponseType(401)]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto request)
+        {
+            try
+            {
+                var response = await _authService.RefreshTokenAsync(request.RefreshToken);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
     }
 }

@@ -35,7 +35,11 @@ namespace SmartCourseManagement.API.Services
                     StudentName = e.Student.Name,
                     CourseId = e.CourseId,
                     CourseTitle = e.Course.Title,
-                    EnrollmentDate = e.EnrollmentDate
+                    EnrollmentDate = e.EnrollmentDate,
+                    CreatedAt = e.CreatedAt,
+                    CreatedBy = e.CreatedBy,
+                    UpdatedAt = e.UpdatedAt,
+                    UpdatedBy = e.UpdatedBy
                 })
                 .ToListAsync();
         }
@@ -71,7 +75,11 @@ namespace SmartCourseManagement.API.Services
                     StudentName = e.Student.Name,
                     CourseId = e.CourseId,
                     CourseTitle = e.Course.Title,
-                    EnrollmentDate = e.EnrollmentDate
+                    EnrollmentDate = e.EnrollmentDate,
+                    CreatedAt = e.CreatedAt,
+                    CreatedBy = e.CreatedBy,
+                    UpdatedAt = e.UpdatedAt,
+                    UpdatedBy = e.UpdatedBy
                 })
                 .FirstOrDefaultAsync();
         }

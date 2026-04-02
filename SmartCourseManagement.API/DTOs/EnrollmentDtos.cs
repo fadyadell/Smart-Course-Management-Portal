@@ -24,5 +24,11 @@ namespace SmartCourseManagement.API.DTOs
         public int CourseId { get; set; }
         public string CourseTitle { get; set; }
         public DateTime EnrollmentDate { get; set; }
+        
+        // Audit fields
+        public DateTime CreatedAt { get; set; }
+        public string CreatedBy { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public string UpdatedBy { get; set; }
     }
 }

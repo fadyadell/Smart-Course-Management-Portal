@@ -7,11 +7,10 @@ namespace SmartCourseManagement.API.Models
     /// <summary>
     /// Represents a course. One-to-Many with InstructorProfile (instructor teaches many courses).
     /// Many-to-Many with User(Student) via the Enrollment junction entity.
+    /// Inherits audit and soft-delete fields from BaseEntity.
     /// </summary>
-    public class Course
+    public class Course : BaseEntity
     {
-        [Key]
-        public int Id { get; set; }
 
         [Required]
         [MaxLength(200)]

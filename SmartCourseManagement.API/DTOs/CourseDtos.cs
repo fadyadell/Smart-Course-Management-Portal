@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace SmartCourseManagement.API.DTOs
@@ -44,5 +45,12 @@ namespace SmartCourseManagement.API.DTOs
         public int Credits { get; set; }
         public int InstructorId { get; set; }
         public string InstructorName { get; set; }
+        
+        // Audit fields
+        public DateTime CreatedAt { get; set; }
+        public string CreatedBy { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public string UpdatedBy { get; set; }
+        public bool IsDeleted { get; set; }
     }
 }

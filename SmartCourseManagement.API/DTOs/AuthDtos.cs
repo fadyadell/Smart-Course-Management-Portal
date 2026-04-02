@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace SmartCourseManagement.API.DTOs
@@ -49,7 +50,23 @@ namespace SmartCourseManagement.API.DTOs
     // DTO returned after successful register/login
     public class AuthResponseDto
     {
-        public string Token { get; set; }
+        public string AccessToken { get; set; }
+        public string RefreshToken { get; set; }
+        public DateTime AccessTokenExpiry { get; set; }
         public UserReadDto User { get; set; }
+    }
+
+    // DTO for requesting a new access token using a refresh token
+    public class RefreshTokenRequestDto
+    {
+        [Required(ErrorMessage = "Refresh token is required")]
+        public string RefreshToken { get; set; }
+    }
+
+    // DTO returned when refreshing the token
+    public class RefreshTokenResponseDto
+    {
+        public string AccessToken { get; set; }
+        public DateTime AccessTokenExpiry { get; set; }
     }
 }

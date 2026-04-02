@@ -7,11 +7,10 @@ namespace SmartCourseManagement.API.Models
     /// <summary>
     /// Junction entity that implements the Many-to-Many relationship between Students (User) and Courses.
     /// A student can enroll in many courses; a course can have many students.
+    /// Inherits audit and soft-delete fields from BaseEntity.
     /// </summary>
-    public class Enrollment
+    public class Enrollment : BaseEntity
     {
-        [Key]
-        public int Id { get; set; }
 
         // FK to the student (User)
         [Required]

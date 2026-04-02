@@ -34,6 +34,21 @@ namespace SmartCourseManagement.API.Controllers
             return Ok(courses);
         }
 
+        /// <summary>Get courses with pagination and search. Query params: page, pageSize, searchTerm, sortBy, sortDescending.</summary>
+        [HttpGet("search")]
+        [ProducesResponseType(typeof(PaginationResponseDto<CourseReadDto>), 200)]
+        public async Task<IActionResult> GetPaged([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchTerm = null)
+        {
+            var paginationDto = new PaginationRequestDto 
+            { 
+                Page = page, 
+                PageSize = pageSize, 
+                SearchTerm = searchTerm 
+            };
+            var result = await _courseService.GetCoursesPagedAsync(paginationDto);
+            return Ok(result);
+        }
+
         /// <summary>Get a course by ID.</summary>
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(CourseReadDto), 200)]
