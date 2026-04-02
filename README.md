@@ -80,11 +80,20 @@ A modern, full-stack educational platform built with **ASP.NET Core 10**, **Enti
 - **Swagger / OpenAPI**: Automatically generates an interactive documentation interface to explore and test the API endpoints.
 - **Vanilla HTML/CSS/JavaScript**: Used to build a responsive, lightweight Single Page Application (SPA) frontend without heavy frameworks.
 
-## 📸 Testing Screenshots
-*(Student Note: Place your Swagger/Postman API testing screenshots here before submitting!)*
-- `Screenshot 1: JWT Login Token generation`
-- `Screenshot 2: Creating a Course (Authorized)`
-- `Screenshot 3: Fetching Enrollments with LINQ projections`
+### 📸 Testing Screenshots
+
+Here are a few highlights from the Swagger API testing:
+
+#### 1. JWT Authentication (Register & Login)
+![JWT Login Token generation](file:///d:/Smart-Course-Management-Portal/screenshots/screenshots/Screenshot%202026-04-02%20015404.png)
+
+#### 2. API Documentation (Swagger UI)
+![Swagger UI Overview](file:///d:/Smart-Course-Management-Portal/screenshots/screenshots/Screenshot%202026-04-02%20030659.png)
+
+#### 3. Course Management
+![Course Creation and List](file:///d:/Smart-Course-Management-Portal/screenshots/screenshots/Screenshot%202026-04-02%20023213.png)
+
+---
 
 ---
 

@@ -6,11 +6,7 @@ async function req(method, endpoint, body = null, token = null) {
     const headers = {};
     if (body) headers['Content-Type'] = 'application/json';
     if (token) headers['Authorization'] = `Bearer ${token}`;
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> dev
     // Add unique identifier to avoid duplicate emails during testing
     if (body && body.email && endpoint.includes('register')) {
         // Only modify email on register, not on login
@@ -22,11 +18,7 @@ async function req(method, endpoint, body = null, token = null) {
             headers,
             body: body ? JSON.stringify(body) : null
         });
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> dev
         let data;
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
@@ -53,11 +45,7 @@ async function runTests() {
     console.log("--- 🔐 Testing Authentication ---");
     let r1 = await req('POST', '/auth/register', { name: "System Admin", email: newAdminEmail, password: "Password123!", role: "Admin" });
     console.log(`[${r1.status}] Register Admin:`, r1.ok ? "✅ PASSED" : `❌ FAILED: ${JSON.stringify(r1.data)}`);
-<<<<<<< HEAD
-
-=======
     
->>>>>>> dev
     let r2 = await req('POST', '/auth/register', { name: "System Instructor", email: newInstEmail, password: "Password123!", role: "Instructor" });
     console.log(`[${r2.status}] Register Instructor:`, r2.ok ? "✅ PASSED" : `❌ FAILED`);
 
@@ -68,11 +56,7 @@ async function runTests() {
     let l1 = await req('POST', '/auth/login', { email: newAdminEmail, password: "Password123!" });
     adminToken = l1.data?.accessToken; // Fixed field name
     console.log(`[${l1.status}] Login Admin:`, adminToken ? "✅ PASSED" : `❌ FAILED: ${JSON.stringify(l1.data)}`);
-<<<<<<< HEAD
-
-=======
     
->>>>>>> dev
     let l2 = await req('POST', '/auth/login', { email: newInstEmail, password: "Password123!" });
     instToken = l2.data?.accessToken;
     console.log(`[${l2.status}] Login Instructor:`, instToken ? "✅ PASSED" : `❌ FAILED`);
@@ -100,11 +84,7 @@ async function runTests() {
     if (courseId) {
         let c3 = await req('PUT', `/courses/${courseId}`, { title: "Updated Auto Title", credits: 4, description: "Hello" }, adminToken);
         console.log(`[${c3.status}] Update Course (Admin):`, c3.status === 204 ? "✅ PASSED" : `❌ FAILED: ${JSON.stringify(c3.data)}`);
-<<<<<<< HEAD
-
-=======
         
->>>>>>> dev
         let c4 = await req('GET', `/courses/${courseId}`, null, stuToken);
         console.log(`[${c4.status}] Get Course by ID:`, c4.status === 200 ? "✅ PASSED" : `❌ FAILED`);
     }
