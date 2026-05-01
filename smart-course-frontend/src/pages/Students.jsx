@@ -105,8 +105,8 @@ export default function Students() {
                           <strong>{en.courseTitle}</strong>
                           <span>Enrolled on: {new Date(en.enrollmentDate).toLocaleDateString()}</span>
                         </div>
-                        <span className={`status-badge status-${en.status.toLowerCase()}`}>
-                          {en.status}
+                        <span className="status-badge status-active">
+                          Active
                         </span>
                       </li>
                     ))}

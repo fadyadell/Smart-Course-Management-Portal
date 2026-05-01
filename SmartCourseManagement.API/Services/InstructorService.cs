@@ -30,6 +30,7 @@ namespace SmartCourseManagement.API.Services
                     Id = p.Id,
                     UserId = p.UserId,
                     UserName = p.User.Name, // Navigate One-to-One to get user name
+                    Email = p.User.Email,   // Navigate One-to-One to get user email
                     Biography = p.Biography,
                     OfficeLocation = p.OfficeLocation
                 })
@@ -47,6 +48,7 @@ namespace SmartCourseManagement.API.Services
                     Id = p.Id,
                     UserId = p.UserId,
                     UserName = p.User.Name,
+                    Email = p.User.Email,
                     Biography = p.Biography,
                     OfficeLocation = p.OfficeLocation
                 })

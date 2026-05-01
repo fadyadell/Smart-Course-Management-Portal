@@ -9,6 +9,10 @@ namespace SmartCourseManagement.API.DTOs
         public int Id { get; set; }
         public int UserId { get; set; }
         public string UserName { get; set; }
+        /// <summary>Alias for UserName — the frontend uses "name" for instructor cards.</summary>
+        public string Name => UserName;
+        /// <summary>Instructor’s email — navigated from the User entity.</summary>
+        public string Email { get; set; }
         public string Biography { get; set; }
         public string OfficeLocation { get; set; }
         

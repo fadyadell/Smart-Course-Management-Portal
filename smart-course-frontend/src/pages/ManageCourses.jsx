@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getCourses, createCourse, deleteCourse } from '../api/api';
+import { getCourses, createCourse, updateCourse, deleteCourse, getInstructors } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 
 const EMPTY_FORM = { title: '', description: '', credits: 3, instructorId: '' };
@@ -8,6 +8,7 @@ export default function ManageCourses() {
   const { user, isAdmin } = useAuth();
 
   const [courses, setCourses] = useState([]);
+  const [instructors, setInstructors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -23,8 +24,12 @@ export default function ManageCourses() {
     setLoading(true);
     setError('');
     try {
-      const data = await getCourses();
-      setCourses(Array.isArray(data) ? data : data.items ?? []);
+      const [coursesData, instructorsData] = await Promise.all([
+        getCourses(),
+        getInstructors()
+      ]);
+      setCourses(Array.isArray(coursesData) ? coursesData : coursesData.items ?? []);
+      setInstructors(instructorsData);
     } catch (err) {
       setError(err.message || 'Failed to load courses.');
     } finally {
@@ -47,7 +52,7 @@ export default function ManageCourses() {
         title: form.title,
         description: form.description,
         credits: parseInt(form.credits, 10),
-        instructorId: parseInt(form.instructorId || user.id, 10),
+        instructorId: parseInt(form.instructorId, 10),
       };
 
       if (editingId) {
@@ -162,16 +167,21 @@ export default function ManageCourses() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="instructorId">Instructor ID</label>
-              <input
+              <label htmlFor="instructorId">Instructor *</label>
+              <select
                 id="instructorId"
                 name="instructorId"
-                type="number"
-                min={1}
                 value={form.instructorId}
                 onChange={handleChange}
-                placeholder={`Default: your ID (${user?.id})`}
-              />
+                required
+              >
+                <option value="">-- Select an Instructor --</option>
+                {instructors.map((inst) => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.name} (Profile ID: {inst.id})
+                  </option>
+                ))}
+              </select>
             </div>
 
             {formError && <div className="alert alert-error"><span>⚠</span> {formError}</div>}
