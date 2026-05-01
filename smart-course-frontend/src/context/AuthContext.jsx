@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import Cookies from 'js-cookie';
 import { loginUser, logoutUser } from '../api/api';
 
 // ─────────────────────────────────────────────
@@ -12,11 +13,11 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true); // hydrating from localStorage
+  const [loading, setLoading] = useState(true); // hydrating from storage
 
-  // Hydrate auth state from localStorage on mount
+  // Hydrate auth state from storage on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('accessToken');
+    const storedToken = Cookies.get('accessToken');
     const storedUser = localStorage.getItem('user');
 
     if (storedToken && storedUser) {
@@ -25,8 +26,8 @@ export function AuthProvider({ children }) {
         setUser(JSON.parse(storedUser));
       } catch {
         // Corrupted data — clear it
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        Cookies.remove('accessToken');
+        Cookies.remove('refreshToken');
         localStorage.removeItem('user');
       }
     }
@@ -47,6 +48,7 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
   }, []);
+
 
   // ── Derived helpers ────────────────────────
   const isAuthenticated = !!token && !!user;

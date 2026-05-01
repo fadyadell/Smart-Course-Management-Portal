@@ -9,6 +9,9 @@ import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
 import MyEnrollments from './pages/MyEnrollments';
 import ManageCourses from './pages/ManageCourses';
+import Students from './pages/Students';
+import Instructors from './pages/Instructors';
+
 
 // ─────────────────────────────────────────────
 //  Public-only route — redirect authenticated users away from login
@@ -76,8 +79,27 @@ function AppShell() {
             }
           />
 
+          <Route
+            path="/students"
+            element={
+              <PrivateRoute roles={['Admin', 'Instructor']}>
+                <Students />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/instructors"
+            element={
+              <PrivateRoute>
+                <Instructors />
+              </PrivateRoute>
+            }
+          />
+
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
       </main>
     </div>

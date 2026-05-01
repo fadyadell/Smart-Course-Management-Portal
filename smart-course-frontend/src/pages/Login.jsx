@@ -42,8 +42,12 @@ export default function Login() {
         setForm((p) => ({ ...p, name: '', password: '', role: 'Student' }));
       }
     } catch (err) {
-      setError(err.message || 'Something went wrong.');
+      const serverMessage = err.response?.data?.message || 
+                            err.response?.data?.title || 
+                            (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(' ') : null);
+      setError(serverMessage || err.message || 'Something went wrong.');
     } finally {
+
       setLoading(false);
     }
   };

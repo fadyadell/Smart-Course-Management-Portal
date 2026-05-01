@@ -1,0 +1,29 @@
+{
+  "dependencies": {
+    "axios": "^1.15.2"
+  },
+  "name": "smart-course-management-portal",
+  "version": "1.0.0",
+  "description": "A modern, full-stack educational platform built with **ASP.NET Core 10**, **Entity Framework Core**, **JWT Authentication**, and **Vanilla JavaScript**.",
+  "main": "index.js",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix smart-course-frontend\" \"dotnet run --project SmartCourseManagement.API\"",
+    "start": "npm run dev"
+  },
+
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fadyadell/Smart-Course-Management-Portal.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/fadyadell/Smart-Course-Management-Portal/issues"
+  },
+  "homepage": "https://github.com/fadyadell/Smart-Course-Management-Portal#readme"
+}
