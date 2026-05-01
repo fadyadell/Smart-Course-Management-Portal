@@ -1,18 +1,19 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getCourses, createCourse, deleteCourse } from '../api/api';
+import { getCourses, createCourse, updateCourse, deleteCourse } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 
 const EMPTY_FORM = { title: '', description: '', credits: 3, instructorId: '' };
 
 export default function ManageCourses() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, canManageCourses } = useAuth();
 
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Create form
+  // Create/Edit form
   const [showForm, setShowForm] = useState(false);
+  const [editingCourse, setEditingCourse] = useState(null); // null = create, object = edit
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
@@ -36,24 +37,65 @@ export default function ManageCourses() {
   const handleChange = (e) =>
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
-  const handleCreate = async (e) => {
+  const openCreateForm = () => {
+    setEditingCourse(null);
+    setForm(EMPTY_FORM);
+    setFormError('');
+    setFormSuccess('');
+    setShowForm(true);
+  };
+
+  const openEditForm = (course) => {
+    setEditingCourse(course);
+    setForm({
+      title: course.title,
+      description: course.description || '',
+      credits: course.credits,
+      instructorId: course.instructorId,
+    });
+    setFormError('');
+    setFormSuccess('');
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingCourse(null);
+    setForm(EMPTY_FORM);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
     setFormSuccess('');
     setSubmitting(true);
     try {
-      const payload = {
-        title: form.title,
-        description: form.description,
-        credits: parseInt(form.credits, 10),
-        instructorId: parseInt(form.instructorId || user.id, 10),
-      };
-      await createCourse(payload);
-      setFormSuccess('Course created successfully!');
-      setForm(EMPTY_FORM);
+      if (editingCourse) {
+        // Update existing course
+        const payload = {
+          title: form.title,
+          description: form.description,
+          credits: parseInt(form.credits, 10),
+        };
+        await updateCourse(editingCourse.id, payload);
+        setFormSuccess('Course updated successfully!');
+        setEditingCourse(null);
+        setShowForm(false);
+      } else {
+        // Create new course
+        const payload = {
+          title: form.title,
+          description: form.description,
+          credits: parseInt(form.credits, 10),
+          instructorId: parseInt(form.instructorId || user.id, 10),
+        };
+        await createCourse(payload);
+        setFormSuccess('Course created successfully!');
+        setForm(EMPTY_FORM);
+      }
       fetchCourses();
     } catch (err) {
-      setFormError(err.message || 'Failed to create course.');
+      setFormError(err.message || 'Failed to save course.');
     } finally {
       setSubmitting(false);
     }
@@ -74,21 +116,27 @@ export default function ManageCourses() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Manage Courses</h1>
-          <p className="page-subtitle">Create and manage course offerings</p>
+          <p className="page-subtitle">Create, edit, and manage course offerings</p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => { setShowForm((v) => !v); setFormError(''); setFormSuccess(''); }}
-        >
-          {showForm ? '✕ Cancel' : '+ New Course'}
-        </button>
+        {!showForm && (
+          <button className="btn btn-primary" onClick={openCreateForm}>
+            + New Course
+          </button>
+        )}
       </div>
 
-      {/* Create form */}
+      {/* Global form success (shown after close) */}
+      {!showForm && formSuccess && (
+        <div className="alert alert-success"><span>✓</span> {formSuccess}</div>
+      )}
+
+      {/* Create / Edit form */}
       {showForm && (
         <div className="manage-form-card">
-          <h2 className="form-heading">Create New Course</h2>
-          <form onSubmit={handleCreate} className="manage-form" noValidate>
+          <h2 className="form-heading">
+            {editingCourse ? `Edit: ${editingCourse.title}` : 'Create New Course'}
+          </h2>
+          <form onSubmit={handleSubmit} className="manage-form" noValidate>
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="title">Course Title *</label>
@@ -128,27 +176,36 @@ export default function ManageCourses() {
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="instructorId">Instructor ID</label>
-              <input
-                id="instructorId"
-                name="instructorId"
-                type="number"
-                min={1}
-                value={form.instructorId}
-                onChange={handleChange}
-                placeholder={`Default: your ID (${user?.id})`}
-              />
-            </div>
+            {/* InstructorId only shown when creating (can't change instructor on update) */}
+            {!editingCourse && (
+              <div className="form-group">
+                <label htmlFor="instructorId">Instructor ID</label>
+                <input
+                  id="instructorId"
+                  name="instructorId"
+                  type="number"
+                  min={1}
+                  value={form.instructorId}
+                  onChange={handleChange}
+                  placeholder={`Default: your ID (${user?.id})`}
+                />
+              </div>
+            )}
 
             {formError && <div className="alert alert-error"><span>⚠</span> {formError}</div>}
             {formSuccess && <div className="alert alert-success"><span>✓</span> {formSuccess}</div>}
 
             <div className="form-actions">
               <button type="submit" className="btn btn-primary" disabled={submitting}>
-                {submitting ? <span className="loading-spinner-sm" /> : 'Create Course'}
+                {submitting ? (
+                  <span className="loading-spinner-sm" />
+                ) : editingCourse ? (
+                  'Save Changes'
+                ) : (
+                  'Create Course'
+                )}
               </button>
-              <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>
+              <button type="button" className="btn btn-secondary" onClick={closeForm}>
                 Cancel
               </button>
             </div>
@@ -183,7 +240,7 @@ export default function ManageCourses() {
                 <th>Credits</th>
                 <th>Instructor</th>
                 <th>Created</th>
-                {isAdmin && <th>Actions</th>}
+                {canManageCourses && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -205,14 +262,24 @@ export default function ManageCourses() {
                   <td className="td-muted">
                     {new Date(c.createdAt).toLocaleDateString()}
                   </td>
-                  {isAdmin && (
+                  {canManageCourses && (
                     <td>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => handleDelete(c.id, c.title)}
-                      >
-                        Delete
-                      </button>
+                      <div className="action-buttons">
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => openEditForm(c)}
+                        >
+                          ✏ Edit
+                        </button>
+                        {isAdmin && (
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleDelete(c.id, c.title)}
+                          >
+                            🗑 Delete
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>

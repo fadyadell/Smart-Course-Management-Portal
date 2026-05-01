@@ -7,8 +7,11 @@ import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
+import CourseDetail from './pages/CourseDetail';
 import MyEnrollments from './pages/MyEnrollments';
 import ManageCourses from './pages/ManageCourses';
+import Students from './pages/Students';
+import Instructors from './pages/Instructors';
 
 // ─────────────────────────────────────────────
 //  Public-only route — redirect authenticated users away from login
@@ -56,6 +59,15 @@ function AppShell() {
             }
           />
 
+          <Route
+            path="/courses/:id"
+            element={
+              <PrivateRoute>
+                <CourseDetail />
+              </PrivateRoute>
+            }
+          />
+
           {/* Private — Student only */}
           <Route
             path="/my-enrollments"
@@ -72,6 +84,26 @@ function AppShell() {
             element={
               <PrivateRoute roles={['Admin', 'Instructor']}>
                 <ManageCourses />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Private — any authenticated user */}
+          <Route
+            path="/instructors"
+            element={
+              <PrivateRoute>
+                <Instructors />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Private — Admin or Instructor only */}
+          <Route
+            path="/students"
+            element={
+              <PrivateRoute roles={['Admin', 'Instructor']}>
+                <Students />
               </PrivateRoute>
             }
           />

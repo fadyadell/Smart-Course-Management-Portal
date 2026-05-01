@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { enrollCourse } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -61,6 +62,10 @@ export default function CourseCard({ course, onEnrollSuccess, onDelete, canManag
         {error && <p className="error-text">{error}</p>}
 
         <div className="card-actions">
+          <Link to={`/courses/${course.id}`} className="btn btn-secondary">
+            View Details
+          </Link>
+
           {isStudent && !enrolled && (
             <button
               className="btn btn-primary"
