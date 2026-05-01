@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { getStudents, getStudentEnrollments } from '../api/api';
 
 export default function Students() {
@@ -135,8 +135,8 @@ export default function Students() {
             </thead>
             <tbody>
               {filtered.map((student, idx) => (
-                <>
-                  <tr key={student.id}>
+                <Fragment key={student.id}>
+                  <tr>
                     <td className="td-muted">{idx + 1}</td>
                     <td>
                       <div className="student-name-cell">
@@ -157,7 +157,7 @@ export default function Students() {
                     </td>
                   </tr>
                   {expandedId === student.id && (
-                    <tr key={`enroll-${student.id}`} className="enrollment-expand-row">
+                    <tr className="enrollment-expand-row">
                       <td colSpan={4}>
                         {enrollLoading && !enrollments[student.id] ? (
                           <div style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>
@@ -180,7 +180,7 @@ export default function Students() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
