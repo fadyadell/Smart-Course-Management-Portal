@@ -15,8 +15,12 @@ namespace SmartCourseManagement.API.Data
     /// </summary>
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public AppDbContext(DbContextOptions<AppDbContext> options, IHttpContextAccessor httpContextAccessor)
+            : base(options)
         {
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public DbSet<User> Users { get; set; }
@@ -228,6 +232,39 @@ namespace SmartCourseManagement.API.Data
                     IsDeleted = false
                 }
             );
+        }
+
+        /// <summary>
+        /// Overrides SaveChangesAsync to automatically populate audit fields.
+        /// - CreatedAt / CreatedBy set only on first add.
+        /// - UpdatedAt / UpdatedBy refreshed on every modification.
+        /// - IsDeleted set to false on creation so new records are always visible.
+        /// </summary>
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var currentUserEmail = _httpContextAccessor.HttpContext?.User
+                .FindFirst(ClaimTypes.Email)?.Value ?? "system";
+
+            var now = DateTime.UtcNow;
+
+            foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    entry.Entity.CreatedAt = now;
+                    entry.Entity.UpdatedAt = now;
+                    entry.Entity.CreatedBy = currentUserEmail;
+                    entry.Entity.UpdatedBy = currentUserEmail;
+                    entry.Entity.IsDeleted = false;
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    entry.Entity.UpdatedAt = now;
+                    entry.Entity.UpdatedBy = currentUserEmail;
+                }
+            }
+
+            return await base.SaveChangesAsync(cancellationToken);
         }
     }
 }

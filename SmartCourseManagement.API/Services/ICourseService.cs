@@ -14,5 +14,6 @@ namespace SmartCourseManagement.API.Services
         Task<CourseReadDto> CreateCourseAsync(CourseCreateDto courseDto);
         Task<bool> UpdateCourseAsync(int id, CourseUpdateDto courseDto);
         Task<bool> DeleteCourseAsync(int id);
+        Task<bool> HardDeleteCourseAsync(int id);
     }
 }

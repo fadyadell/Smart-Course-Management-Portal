@@ -17,14 +17,14 @@ namespace SmartCourseManagement.API.Models
         public int StudentId { get; set; }
 
         [ForeignKey("StudentId")]
-        public User Student { get; set; }
+        public User Student { get; set; } = null!;
 
         // FK to the course
         [Required]
         public int CourseId { get; set; }
 
         [ForeignKey("CourseId")]
-        public Course Course { get; set; }
+        public Course Course { get; set; } = null!;
 
         /// <summary>Date when the student enrolled (set automatically to UTC now)</summary>
         [Required]

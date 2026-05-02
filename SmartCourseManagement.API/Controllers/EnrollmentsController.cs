@@ -22,33 +22,44 @@ namespace SmartCourseManagement.API.Controllers
             _enrollmentService = enrollmentService;
         }
 
-        /// <summary>Get the current student's enrollments (extracted from JWT token).</summary>
+        /// <summary>
+        /// Get the current student's enrollments with pagination.
+        /// Supports ?page=1&amp;pageSize=10
+        /// </summary>
         [HttpGet("my-enrollments")]
         [Authorize(Roles = "Student")]
-        [ProducesResponseType(typeof(EnrollmentReadDto[]), 200)]
-        public async Task<IActionResult> GetMyEnrollments()
+        [ProducesResponseType(typeof(PagedResponse<EnrollmentReadDto>), 200)]
+        public async Task<IActionResult> GetMyEnrollments([FromQuery] PagedRequest request)
         {
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
 
             var userId = int.Parse(userIdStr);
-            var enrollments = await _enrollmentService.GetStudentEnrollmentsAsync(userId);
-            return Ok(enrollments);
+            var result = await _enrollmentService.GetStudentEnrollmentsAsync(userId, request);
+            return Ok(result);
         }
 
-        /// <summary>
-        /// Get all enrollments for a specific student (Admin/Instructor can view any student).
-        /// </summary>
+        /// <summary>Get all enrollments for a specific student. Admin/Instructor only.</summary>
         [HttpGet("student/{studentId}")]
         [Authorize(Roles = "Admin,Instructor")]
-        [ProducesResponseType(typeof(EnrollmentReadDto[]), 200)]
-        public async Task<IActionResult> GetStudentEnrollments(int studentId)
+        [ProducesResponseType(typeof(PagedResponse<EnrollmentReadDto>), 200)]
+        public async Task<IActionResult> GetStudentEnrollments(int studentId, [FromQuery] PagedRequest request)
         {
-            var enrollments = await _enrollmentService.GetStudentEnrollmentsAsync(studentId);
-            return Ok(enrollments);
+            var result = await _enrollmentService.GetStudentEnrollmentsAsync(studentId, request);
+            return Ok(result);
         }
 
-        /// <summary>Enroll a student in a course. Student role only — enforces self-enrollment.</summary>
+        /// <summary>Get all enrollments with optional filtering. Admin/Instructor only.</summary>
+        [HttpGet]
+        [Authorize(Roles = "Admin,Instructor")]
+        [ProducesResponseType(typeof(PagedResponse<EnrollmentReadDto>), 200)]
+        public async Task<IActionResult> GetAll([FromQuery] EnrollmentFilterRequest filter)
+        {
+            var result = await _enrollmentService.GetAllEnrollmentsAsync(filter);
+            return Ok(result);
+        }
+
+        /// <summary>Enroll a student in a course. Student role only (self-enrollment).</summary>
         [HttpPost]
         [Authorize(Roles = "Student")]
         [ProducesResponseType(typeof(EnrollmentReadDto), 200)]
@@ -61,7 +72,6 @@ namespace SmartCourseManagement.API.Controllers
 
             var userId = int.Parse(userIdStr);
 
-            // Security: a student can only enroll themselves (not other students)
             if (userId != enrollmentDto.StudentId)
                 return Forbid();
 
@@ -76,7 +86,7 @@ namespace SmartCourseManagement.API.Controllers
             }
         }
 
-        /// <summary>Remove an enrollment by ID. Admin or Student.</summary>
+        /// <summary>Remove an enrollment by ID (soft delete). Admin or Student.</summary>
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin,Student")]
         [ProducesResponseType(204)]

@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="SmartCourseManagement.API/SmartCourseManagement.API.csproj" />
+  <Project Path="SmartCourseManagement.Tests/SmartCourseManagement.Tests.csproj" />
 </Solution>

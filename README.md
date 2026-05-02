@@ -90,7 +90,7 @@ You can use the following default credentials to explore the platform without re
 | **Instructor** | instructor@example.com | `InstructorPass123!` |
 | **Student** | student@example.com | `StudentPass123!` |
 
----
+### Entity Relationships
 
 ## 📂 Architecture Overview
 

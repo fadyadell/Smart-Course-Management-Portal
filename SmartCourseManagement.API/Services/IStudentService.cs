@@ -4,12 +4,10 @@ using SmartCourseManagement.API.DTOs;
 
 namespace SmartCourseManagement.API.Services
 {
-    /// <summary>
-    /// Interface for student read operations.
-    /// </summary>
+    /// <summary>Interface for student read operations with pagination support.</summary>
     public interface IStudentService
     {
-        Task<IEnumerable<StudentReadDto>> GetAllStudentsAsync();
-        Task<StudentReadDto> GetStudentByIdAsync(int id);
+        Task<PagedResponse<StudentReadDto>> GetAllStudentsAsync(PagedRequest request);
+        Task<StudentReadDto?> GetStudentByIdAsync(int id);
     }
 }

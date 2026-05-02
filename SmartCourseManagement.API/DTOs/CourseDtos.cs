@@ -36,7 +36,7 @@ namespace SmartCourseManagement.API.DTOs
         public int Credits { get; set; }
     }
 
-    // DTO returned when reading course data
+    // DTO returned when reading course data (includes audit fields)
     public class CourseReadDto
     {
         public int Id { get; set; }

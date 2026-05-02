@@ -20,13 +20,15 @@ namespace SmartCourseManagement.API.Controllers
             _studentService = studentService;
         }
 
-        /// <summary>Get all students. Admin and Instructor only.</summary>
+        /// <summary>
+        /// Get all students with pagination. Supports ?page=1&amp;pageSize=10&amp;searchTerm=alice
+        /// </summary>
         [HttpGet]
-        [ProducesResponseType(typeof(StudentReadDto[]), 200)]
-        public async Task<IActionResult> GetAll()
+        [ProducesResponseType(typeof(PagedResponse<StudentReadDto>), 200)]
+        public async Task<IActionResult> GetAll([FromQuery] PagedRequest request)
         {
-            var students = await _studentService.GetAllStudentsAsync();
-            return Ok(students);
+            var result = await _studentService.GetAllStudentsAsync(request);
+            return Ok(result);
         }
 
         /// <summary>Get a student by ID. Admin and Instructor only.</summary>
