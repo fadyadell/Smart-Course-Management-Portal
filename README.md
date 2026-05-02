@@ -153,17 +153,32 @@ The frontend communicates with the backend via the following RESTful endpoints:
 
 ## 📸 Application Screenshots
 
-### 🖥️ Dashboard & Overview
-![Dashboard](screenshots/screenshots/Screenshot%202026-04-02%20025015.png)
-*Role-specific dashboard showing real-time statistics and quick actions.*
+### 🏠 Home & Authentication
+![Home](website%20screenshoots/home%20and%20login/Screenshot%202026-05-02%20191548.png)
+![Login](website%20screenshoots/home%20and%20login/Screenshot%202026-05-02%20191603.png)
 
-### 📚 Course Catalogue
-![Courses](screenshots/screenshots/Screenshot%202026-04-02%20023213.png)
-*Advanced filtering and search functionality for exploring courses.*
+### 🎓 Student Experience
+![Student Dashboard](website%20screenshoots/student/Screenshot%202026-05-02%20191641.png)
+![Student Courses](website%20screenshoots/student/Screenshot%202026-05-02%20191658.png)
+![Student Enrollments](website%20screenshoots/student/Screenshot%202026-05-02%20191712.png)
+![Student Profile](website%20screenshoots/student/Screenshot%202026-05-02%20191724.png)
 
-### ⚙️ Course Management
-![Management](screenshots/screenshots/Screenshot%202026-04-02%20020545.png)
-*Administrative interface for managing course offerings and data.*
+### 👨‍🏫 Instructor Experience
+![Instructor Dashboard](website%20screenshoots/instructor/Screenshot%202026-05-02%20191920.png)
+![Course Management](website%20screenshoots/instructor/Screenshot%202026-05-02%20191936.png)
+![Student List](website%20screenshoots/instructor/Screenshot%202026-05-02%20191947.png)
+![Add Course](website%20screenshoots/instructor/Screenshot%202026-05-02%20192543.png)
+![Instructor Tools](website%20screenshoots/instructor/Screenshot%202026-05-02%20192609.png)
+![Instructor Profile](website%20screenshoots/instructor/Screenshot%202026-05-02%20192617.png)
+![Settings](website%20screenshoots/instructor/Screenshot%202026-05-02%20192715.png)
+
+### 🛡️ Administrator Experience
+![Admin Overview](website%20screenshoots/admin/Screenshot%202026-05-02%20191802.png)
+![User Management](website%20screenshoots/admin/Screenshot%202026-05-02%20191815.png)
+![System Statistics](website%20screenshoots/admin/Screenshot%202026-05-02%20191830.png)
+![Global Settings](website%20screenshoots/admin/Screenshot%202026-05-02%20191839.png)
+![Audit Logs](website%20screenshoots/admin/Screenshot%202026-05-02%20191852.png)
+
 
 ---
 
