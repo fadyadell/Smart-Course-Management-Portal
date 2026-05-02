@@ -8,6 +8,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
+import CourseDetail from './pages/CourseDetail';
 import MyEnrollments from './pages/MyEnrollments';
 import ManageCourses from './pages/ManageCourses';
 import CourseForm from './pages/CourseForm';
@@ -58,6 +59,15 @@ function AppShell() {
             element={
               <PrivateRoute>
                 <Courses />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/courses/:id"
+            element={
+              <PrivateRoute>
+                <CourseDetail />
               </PrivateRoute>
             }
           />
