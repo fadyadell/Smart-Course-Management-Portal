@@ -97,7 +97,7 @@ namespace SmartCourseManagement.API.Services
         {
             return await _context.Courses
                 .AsNoTracking()
-                .Where(c => c.Id == id)
+                .Where(c => c.Id == id && !c.IsDeleted)
                 .Select(c => new CourseReadDto
                 {
                     Id = c.Id,
@@ -190,7 +190,7 @@ namespace SmartCourseManagement.API.Services
         public async Task<bool> UpdateCourseAsync(int id, CourseUpdateDto courseDto)
         {
             var course = await _context.Courses.FindAsync(id);
-            if (course == null) return false;
+            if (course == null || course.IsDeleted) return false;
 
             if (courseDto.Title != null) course.Title = courseDto.Title;
             if (courseDto.Description != null) course.Description = courseDto.Description;
