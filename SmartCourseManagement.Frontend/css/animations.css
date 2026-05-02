@@ -1,0 +1,141 @@
+/* =========================================================
+   Smart Course Management Portal – Animations
+   ========================================================= */
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-16px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(40px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+}
+
+@keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
+}
+
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* ----- Apply animations to page elements ----- */
+.page-wrapper   { animation: fadeIn 0.3s ease; }
+.auth-card      { animation: scaleIn 0.3s ease; }
+.hero h1        { animation: fadeInUp 0.5s ease; }
+.hero p         { animation: fadeInUp 0.5s ease 0.1s both; }
+.hero-actions   { animation: fadeInUp 0.5s ease 0.2s both; }
+
+.stat-card      { animation: fadeInUp 0.4s ease both; }
+.stat-card:nth-child(1) { animation-delay: 0.05s; }
+.stat-card:nth-child(2) { animation-delay: 0.10s; }
+.stat-card:nth-child(3) { animation-delay: 0.15s; }
+.stat-card:nth-child(4) { animation-delay: 0.20s; }
+
+.feature-card   { animation: fadeInUp 0.4s ease both; }
+.feature-card:nth-child(1) { animation-delay: 0.0s; }
+.feature-card:nth-child(2) { animation-delay: 0.1s; }
+.feature-card:nth-child(3) { animation-delay: 0.2s; }
+
+/* ----- Card hover effect ----- */
+.course-card, .stat-card, .feature-card {
+    will-change: transform;
+}
+
+/* ----- Button transitions ----- */
+.btn {
+    transition: background-color 0.18s ease,
+                border-color     0.18s ease,
+                color            0.18s ease,
+                box-shadow       0.18s ease,
+                transform        0.12s ease;
+}
+.btn:hover:not(:disabled) { box-shadow: 0 4px 8px rgba(0,0,0,0.12); }
+.btn-primary:hover  { box-shadow: 0 4px 12px rgba(37,99,235,0.35); }
+.btn-danger:hover   { box-shadow: 0 4px 12px rgba(239,68,68,0.35); }
+.btn-success:hover  { box-shadow: 0 4px 12px rgba(34,197,94,0.35); }
+
+/* ----- Toast slide-in ----- */
+.toast {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* ----- Loading spinner ----- */
+.spinner {
+    animation: spin 0.8s linear infinite;
+}
+
+/* ----- Skeleton loading ----- */
+.skeleton {
+    background: linear-gradient(90deg,
+        var(--border) 25%,
+        #f8fafc      50%,
+        var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: var(--radius);
+    color: transparent !important;
+}
+.skeleton * { visibility: hidden; }
+
+/* ----- Pulse dot for "live" indicators ----- */
+.pulse-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+    display: inline-block;
+    animation: pulse 1.5s ease infinite;
+}
+
+/* ----- Nav link underline slide ----- */
+.nav-links a::after {
+    content: '';
+    display: block;
+    height: 2px;
+    background: rgba(255,255,255,0.8);
+    transform: scaleX(0);
+    transition: transform 0.2s ease;
+    transform-origin: left;
+}
+.nav-links a:hover::after { transform: scaleX(1); }
+
+/* ----- Input focus ring ----- */
+.form-control, .form-select {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ----- Modal ----- */
+.modal.fade .modal-dialog { animation: fadeInDown 0.25s ease; }
+
+/* ----- Table row hover ----- */
+.table tbody tr { transition: background 0.15s ease; }
+
+/* ----- Page link hover ----- */
+.page-link { transition: background 0.15s ease, color 0.15s ease; }

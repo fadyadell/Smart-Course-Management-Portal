@@ -1,6 +1,7 @@
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartCourseManagement.API.DTOs;
@@ -8,14 +9,9 @@ using SmartCourseManagement.API.Services;
 
 namespace SmartCourseManagement.API.Controllers
 {
-    /// <summary>
-    /// Manages student enrollment in courses (Many-to-Many relationship).
-    /// - GET my-enrollments: Student only (reads their own enrollments from JWT claim)
-    /// - POST enroll: Student only (enforces they enroll themselves)
-    /// - DELETE unenroll: Admin or Student
-    /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/enrollments")]
     [Authorize]
     public class EnrollmentsController : ControllerBase
     {

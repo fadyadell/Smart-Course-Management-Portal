@@ -1,6 +1,7 @@
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartCourseManagement.API.DTOs;
@@ -8,13 +9,9 @@ using SmartCourseManagement.API.Services;
 
 namespace SmartCourseManagement.API.Controllers
 {
-    /// <summary>
-    /// Manages instructor profiles (One-to-One with User, One-to-Many with Courses).
-    /// - GET endpoints: any authenticated user
-    /// - PUT profile: Instructor only (updates their own profile via JWT claim)
-    /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/instructors")]
     [Authorize]
     public class InstructorsController : ControllerBase
     {

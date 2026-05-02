@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartCourseManagement.API.DTOs;
@@ -6,12 +7,9 @@ using SmartCourseManagement.API.Services;
 
 namespace SmartCourseManagement.API.Controllers
 {
-    /// <summary>
-    /// Exposes student listing. Admin and Instructor roles can view student lists.
-    /// Students are users with Role = "Student".
-    /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/students")]
     [Authorize(Roles = "Admin,Instructor")]
     public class StudentsController : ControllerBase
     {

@@ -1,14 +1,14 @@
-using Microsoft.EntityFrameworkCore;
-using SmartCourseManagement.API.Models;
 using System;
-using System.Collections.Generic;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using SmartCourseManagement.API.Models;
 
 namespace SmartCourseManagement.API.Data
 {
     /// <summary>
     /// Entity Framework Core DbContext. Configures all entity relationships using Fluent API.
-    /// Automatically handles audit fields (CreatedAt, UpdatedAt, CreatedBy, UpdatedBy).
-    /// Supports soft deletion via IsDeleted flag.
+    /// Includes: soft-delete global filter on Course, audit field auto-update, refresh tokens.
     /// </summary>
     public class AppDbContext : DbContext
     {
@@ -23,59 +23,34 @@ namespace SmartCourseManagement.API.Data
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         /// <summary>
-        /// Intercepts SaveChanges to auto-set audit fields (CreatedAt, UpdatedAt, CreatedBy, UpdatedBy).
-        /// Also marks DeletedAt and DeletedBy when soft-deleting.
+        /// Automatically updates audit timestamps before every save.
         /// </summary>
         public override int SaveChanges()
         {
-            UpdateAuditFields();
+            SetAuditFields();
             return base.SaveChanges();
         }
 
-        /// <summary>
-        /// Intercepts SaveChangesAsync to auto-set audit fields.
-        /// </summary>
-        public override async System.Threading.Tasks.Task<int> SaveChangesAsync(
-            System.Threading.CancellationToken cancellationToken = default)
+        public override System.Threading.Tasks.Task<int> SaveChangesAsync(System.Threading.CancellationToken cancellationToken = default)
         {
-            UpdateAuditFields();
-            return await base.SaveChangesAsync(cancellationToken);
+            SetAuditFields();
+            return base.SaveChangesAsync(cancellationToken);
         }
 
-        /// <summary>
-        /// Sets CreatedAt, CreatedBy, UpdatedAt, UpdatedBy, DeletedAt, DeletedBy for BaseEntity instances.
-        /// </summary>
-        private void UpdateAuditFields()
+        private void SetAuditFields()
         {
-            var createdBy = "System"; // In production, extract from HttpContext: httpContextAccessor?.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "System";
-
-            foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+            var now = DateTime.UtcNow;
+            foreach (EntityEntry entry in ChangeTracker.Entries())
             {
-                var now = DateTime.UtcNow;
-
-                switch (entry.State)
+                if (entry.Entity is User u)
                 {
-                    case EntityState.Added:
-                        entry.Entity.CreatedAt = now;
-                        entry.Entity.CreatedBy = createdBy;
-                        entry.Entity.UpdatedAt = now;
-                        entry.Entity.UpdatedBy = createdBy;
-                        break;
-
-                    case EntityState.Modified:
-                        entry.Entity.UpdatedAt = now;
-                        entry.Entity.UpdatedBy = createdBy;
-                        break;
-
-                    case EntityState.Deleted:
-                        // Soft delete: instead of removing, mark as deleted
-                        entry.State = EntityState.Modified;
-                        entry.Entity.IsDeleted = true;
-                        entry.Entity.DeletedAt = now;
-                        entry.Entity.DeletedBy = createdBy;
-                        entry.Entity.UpdatedAt = now;
-                        entry.Entity.UpdatedBy = createdBy;
-                        break;
+                    if (entry.State == EntityState.Added) u.CreatedAt = now;
+                    if (entry.State == EntityState.Added || entry.State == EntityState.Modified) u.UpdatedAt = now;
+                }
+                if (entry.Entity is Course c)
+                {
+                    if (entry.State == EntityState.Added) c.CreatedAt = now;
+                    if (entry.State == EntityState.Added || entry.State == EntityState.Modified) c.UpdatedAt = now;
                 }
             }
         }
@@ -85,17 +60,14 @@ namespace SmartCourseManagement.API.Data
             base.OnModelCreating(modelBuilder);
 
             // =============================================
-            // GLOBAL QUERY FILTER: Exclude soft-deleted records from all queries
+            // SOFT DELETE GLOBAL FILTER — Course
+            // All LINQ queries on Courses automatically exclude soft-deleted records
             // =============================================
-            modelBuilder.Entity<User>().HasQueryFilter(u => !u.IsDeleted);
-            modelBuilder.Entity<Course>().HasQueryFilter(c => !c.IsDeleted);
-            modelBuilder.Entity<Enrollment>().HasQueryFilter(e => !e.IsDeleted);
-            modelBuilder.Entity<InstructorProfile>().HasQueryFilter(ip => !ip.IsDeleted);
-            modelBuilder.Entity<RefreshToken>().HasQueryFilter(rt => !rt.IsDeleted);
+            modelBuilder.Entity<Course>()
+                .HasQueryFilter(c => !c.IsDeleted);
 
             // =============================================
             // ONE-TO-ONE: User <-> InstructorProfile
-            // A user with role Instructor has exactly one InstructorProfile
             // =============================================
             modelBuilder.Entity<User>()
                 .HasOne(u => u.InstructorProfile)
@@ -104,18 +76,7 @@ namespace SmartCourseManagement.API.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             // =============================================
-            // ONE-TO-MANY: User -> RefreshTokens
-            // A user can have many refresh tokens (for multiple devices)
-            // =============================================
-            modelBuilder.Entity<User>()
-                .HasMany<RefreshToken>()
-                .WithOne(rt => rt.User)
-                .HasForeignKey(rt => rt.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // =============================================
             // ONE-TO-MANY: InstructorProfile -> Courses
-            // One instructor teaches many courses
             // =============================================
             modelBuilder.Entity<InstructorProfile>()
                 .HasMany(p => p.Courses)
@@ -125,7 +86,6 @@ namespace SmartCourseManagement.API.Data
 
             // =============================================
             // MANY-TO-MANY: Student (User) <-> Course (via Enrollment)
-            // Many students can enroll in many courses
             // =============================================
             modelBuilder.Entity<Enrollment>()
                 .HasOne(e => e.Student)
@@ -139,85 +99,50 @@ namespace SmartCourseManagement.API.Data
                 .HasForeignKey(e => e.CourseId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // =============================================
+            // ONE-TO-MANY: User -> RefreshTokens
+            // =============================================
+            modelBuilder.Entity<RefreshToken>()
+                .HasOne(r => r.User)
+                .WithMany(u => u.RefreshTokens)
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             // Unique email constraint
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
 
             // SEED DATA
-            // Note: Password is 'InstructorPass123!' hashed with BCrypt
-            var seedDateTime = new DateTime(2025, 3, 23, 7, 30, 0, DateTimeKind.Utc);
+            // Note: Password is 'Password123' hashed with BCrypt
+            var seedDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             modelBuilder.Entity<User>().HasData(
-                new User 
-                { 
-                    Id = 1, 
-                    Name = "Dr. Jane Smith", 
-                    Email = "instructor@example.com", 
-                    PasswordHash = "$2a$11$XdmZbeEuxVdBoHMI/IqjpO3BhIDs6wgq8iXmVDmRS8RD4Ih3fiNrm", // "InstructorPass123!"
+                new User
+                {
+                    Id = 1,
+                    Name = "Dr. Jane Smith",
+                    Email = "instructor@example.com",
+                    PasswordHash = "$2a$11$S8mJpx/o7u6H1iU96J10nuvL1gYhX6A9N5X/B8p3bY7fF.E2f/v1i",
                     Role = "Instructor",
-                    CreatedAt = seedDateTime,
-                    CreatedBy = "System",
-                    UpdatedAt = seedDateTime,
-                    UpdatedBy = "System",
-                    IsDeleted = false
+                    CreatedAt = seedDate,
+                    UpdatedAt = seedDate
                 }
             );
 
             modelBuilder.Entity<InstructorProfile>().HasData(
-                new InstructorProfile 
-                { 
-                    Id = 1, 
-                    UserId = 1, 
-                    Biography = "Professor of Computer Science with 15 years experience.", 
-                    OfficeLocation = "Science Building, Lab 404",
-                    CreatedAt = seedDateTime,
-                    CreatedBy = "System",
-                    UpdatedAt = seedDateTime,
-                    UpdatedBy = "System",
-                    IsDeleted = false
+                new InstructorProfile
+                {
+                    Id = 1,
+                    UserId = 1,
+                    Biography = "Professor of Computer Science with 15 years experience.",
+                    OfficeLocation = "Science Building, Lab 404"
                 }
             );
 
             modelBuilder.Entity<Course>().HasData(
-                new Course 
-                { 
-                    Id = 1, 
-                    Title = "Introduction to ASP.NET Core", 
-                    Description = "Learn the basics of building high-performance Web APIs.", 
-                    Credits = 3, 
-                    InstructorId = 1,
-                    CreatedAt = seedDateTime,
-                    CreatedBy = "System",
-                    UpdatedAt = seedDateTime,
-                    UpdatedBy = "System",
-                    IsDeleted = false
-                },
-                new Course 
-                { 
-                    Id = 2, 
-                    Title = "Advanced Entity Framework Core", 
-                    Description = "Master complex relationships and performance tuning.", 
-                    Credits = 4, 
-                    InstructorId = 1,
-                    CreatedAt = seedDateTime,
-                    CreatedBy = "System",
-                    UpdatedAt = seedDateTime,
-                    UpdatedBy = "System",
-                    IsDeleted = false
-                },
-                new Course 
-                { 
-                    Id = 3, 
-                    Title = "Frontend Mastery with Vanilla JS", 
-                    Description = "Build responsive and vibrant SPAs without heavy frameworks.", 
-                    Credits = 3, 
-                    InstructorId = 1,
-                    CreatedAt = seedDateTime,
-                    CreatedBy = "System",
-                    UpdatedAt = seedDateTime,
-                    UpdatedBy = "System",
-                    IsDeleted = false
-                }
+                new Course { Id = 1, Title = "Introduction to ASP.NET Core", Description = "Learn the basics of building high-performance Web APIs.", Credits = 3, InstructorId = 1, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Course { Id = 2, Title = "Advanced Entity Framework Core", Description = "Master complex relationships and performance tuning.", Credits = 4, InstructorId = 1, CreatedAt = seedDate, UpdatedAt = seedDate },
+                new Course { Id = 3, Title = "Frontend Mastery with Vanilla JS", Description = "Build responsive and vibrant SPAs without heavy frameworks.", Credits = 3, InstructorId = 1, CreatedAt = seedDate, UpdatedAt = seedDate }
             );
         }
     }

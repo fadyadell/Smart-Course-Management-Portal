@@ -1,174 +1,226 @@
-using Microsoft.Extensions.Hosting;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using Hangfire;
-using Hangfire.Dashboard;
-using Hangfire.SqlServer;
-using SmartCourseManagement.API.Data;
-using SmartCourseManagement.API.Middleware;
-using SmartCourseManagement.API.Services;
 using System;
 using System.Text;
 using System.Threading.RateLimiting;
+using Asp.Versioning;
+using Hangfire;
+using Hangfire.SqlServer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Serilog;
+using SmartCourseManagement.API.Data;
+using SmartCourseManagement.API.Middleware;
+using SmartCourseManagement.API.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+// ─────────────────────────────────────────────────────────────────────────────
+// Configure Serilog early so startup errors are captured in the log file too.
+// ─────────────────────────────────────────────────────────────────────────────
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console()
+    .WriteTo.File("logs/app-.log", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
 
-// Services
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
 
-// Database
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    // Use Serilog for all ASP.NET Core logging
+    builder.Host.UseSerilog();
 
-// Dependency Injection
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ICourseService, CourseService>();
-builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
-builder.Services.AddScoped<IInstructorService, InstructorService>();
-builder.Services.AddScoped<IStudentService, StudentService>();
+    // ─────────────────────────────────────────────────────────────────────────
+    // Database
+    // ─────────────────────────────────────────────────────────────────────────
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlServer(builder.Configuration["ConnectionStrings:DefaultConnection"]));
 
-// JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"];
-if (string.IsNullOrEmpty(jwtKey))
-    throw new Exception("JWT Key not configured");
+    // ─────────────────────────────────────────────────────────────────────────
+    // Dependency Injection – Services
+    // ─────────────────────────────────────────────────────────────────────────
+    builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<ICourseService, CourseService>();
+    builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+    builder.Services.AddScoped<IStudentService, StudentService>();
+    builder.Services.AddScoped<IInstructorService, InstructorService>();
+    builder.Services.AddScoped<BackgroundJobService>();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
+    // ─────────────────────────────────────────────────────────────────────────
+    // JWT Authentication
+    // ─────────────────────────────────────────────────────────────────────────
+    var jwtKey = builder.Configuration["Jwt:Key"]
+        ?? throw new InvalidOperationException("Jwt:Key is not configured.");
+
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-        };
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                ValidAudience = builder.Configuration["Jwt:Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+            };
+        });
+
+    builder.Services.AddAuthorization();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // API Versioning
+    // ─────────────────────────────────────────────────────────────────────────
+    builder.Services.AddApiVersioning(options =>
+    {
+        options.DefaultApiVersion = new ApiVersion(1, 0);
+        options.AssumeDefaultVersionWhenUnspecified = true;
+        options.ReportApiVersions = true;
+    }).AddApiExplorer(options =>
+    {
+        options.GroupNameFormat = "'v'VVV";
+        options.SubstituteApiVersionInUrl = true;
     });
 
-// Authorization
-builder.Services.AddAuthorization();
-
-// Rate Limiting
-builder.Services.AddRateLimiter(options =>
-{
-    options.AddFixedWindowLimiter("fixed", policy =>
+    // ─────────────────────────────────────────────────────────────────────────
+    // Rate Limiting – 100 requests per minute per IP
+    // ─────────────────────────────────────────────────────────────────────────
+    builder.Services.AddRateLimiter(options =>
     {
-        policy.PermitLimit = 100;
-        policy.Window = TimeSpan.FromMinutes(1);
-        policy.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        policy.QueueLimit = 2;
-    });
-});
-
-// Swagger
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo 
-    { 
-        Title = "Smart Course Management API", 
-        Version = "v1",
-        Description = "A comprehensive API for managing courses, instructors, students, and enrollments."
-    });
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\""
-    });
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+        options.AddFixedWindowLimiter("fixed", limiterOptions =>
         {
-            new OpenApiSecurityScheme 
-            { 
-                Reference = new OpenApiReference 
-                { 
-                    Type = ReferenceType.SecurityScheme, 
-                    Id = "Bearer" 
-                } 
-            },
-            Array.Empty<string>()
-        }
+            limiterOptions.PermitLimit = 100;
+            limiterOptions.Window = TimeSpan.FromMinutes(1);
+            limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            limiterOptions.QueueLimit = 0;
+        });
+        options.RejectionStatusCode = 429;
     });
-});
 
-// CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
+    // ─────────────────────────────────────────────────────────────────────────
+    // CORS – allow all origins (lock down in production)
+    // ─────────────────────────────────────────────────────────────────────────
+    builder.Services.AddCors(options =>
     {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        options.AddPolicy("AllowAll", policy =>
+            policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
     });
-});
 
-// Hangfire Background Jobs
-builder.Services.AddHangfire(config =>
-    config.SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
-        .UseSimpleAssemblyNameTypeSerializer()
-        .UseRecommendedSerializerSettings()
-        .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddHangfireServer();
-builder.Services.AddScoped<BackgroundJobService>();
-
-var app = builder.Build();
-
-// Use Hangfire Dashboard (accessible at /hangfire)
-app.UseHangfireDashboard();
-
-// Schedule background jobs
-RecurringJob.AddOrUpdate<BackgroundJobService>(
-    "auto-unenroll-expired",
-    x => x.AutoUnenrollFromExpiredCoursesAsync(),
-    Cron.Daily);
-
-RecurringJob.AddOrUpdate<BackgroundJobService>(
-    "weekly-enrollment-report",
-    x => x.GenerateWeeklyEnrollmentReportAsync(),
-    Cron.Weekly(DayOfWeek.Monday, 8, 0));
-
-RecurringJob.AddOrUpdate<BackgroundJobService>(
-    "revoke-old-tokens",
-    x => x.RevokeOldRefreshTokensAsync(),
-    Cron.Daily(2, 0));
-
-// Use rate limiting
-app.UseRateLimiter();
-
-// Global exception handling middleware
-app.UseMiddleware<ExceptionHandlingMiddleware>();
-
-if (app.Environment.EnvironmentName == "Development")
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    // ─────────────────────────────────────────────────────────────────────────
+    // Swagger / OpenAPI with JWT bearer support
+    // ─────────────────────────────────────────────────────────────────────────
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Smart Course Management API V1");
+        c.SwaggerDoc("v1", new OpenApiInfo
+        {
+            Title = "Smart Course Management API",
+            Version = "v1",
+            Description = "REST API for managing courses, enrollments, and users. " +
+                          "Authenticate via POST /api/v1/auth/login, copy the returned token, " +
+                          "and click the Authorize button above."
+        });
+
+        c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            In = ParameterLocation.Header,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Description = "Enter your JWT token."
+        });
+
+        c.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
     });
-}
 
-if (!app.Environment.IsDevelopment())
+    builder.Services.AddControllers();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Hangfire Background Jobs
+    // ─────────────────────────────────────────────────────────────────────────
+    builder.Services.AddHangfire(config =>
+        config.SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+    builder.Services.AddHangfireServer();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Build & configure the HTTP pipeline
+    // ─────────────────────────────────────────────────────────────────────────
+    var app = builder.Build();
+
+    // Global exception handler – must be first in the pipeline
+    app.UseMiddleware<ExceptionMiddleware>();
+
+    // Serilog request logging
+    app.UseSerilogRequestLogging();
+
+    app.UseCors("AllowAll");
+    app.UseRateLimiter();
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Smart Course Management API v1");
+            c.RoutePrefix = "swagger";
+            c.DefaultModelsExpandDepth(-1);
+        });
+    }
+
+    // Hangfire Dashboard (accessible at /hangfire)
+    app.UseHangfireDashboard();
+
+    // Schedule background jobs
+    RecurringJob.AddOrUpdate<BackgroundJobService>(
+        "auto-unenroll-expired",
+        x => x.AutoUnenrollFromExpiredCoursesAsync(),
+        Cron.Daily);
+
+    RecurringJob.AddOrUpdate<BackgroundJobService>(
+        "weekly-enrollment-report",
+        x => x.GenerateWeeklyEnrollmentReportAsync(),
+        Cron.Weekly(DayOfWeek.Monday, 8, 0));
+
+    RecurringJob.AddOrUpdate<BackgroundJobService>(
+        "revoke-old-tokens",
+        x => x.RevokeOldRefreshTokensAsync(),
+        Cron.Daily(2, 0));
+
+    app.UseStaticFiles();
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapControllers().RequireRateLimiting("fixed");
+
+    Log.Information("Smart Course Management API starting...");
+    app.Run();
+}
+catch (Exception ex)
 {
-    app.UseHttpsRedirection();
+    Log.Fatal(ex, "Application failed to start.");
 }
-
-app.UseDefaultFiles();
-app.UseStaticFiles();
-app.UseCors("AllowAll");
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-
-app.Run();
+finally
+{
+    Log.CloseAndFlush();
+}

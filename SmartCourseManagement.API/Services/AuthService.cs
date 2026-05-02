@@ -1,4 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -6,25 +11,16 @@ using Microsoft.IdentityModel.Tokens;
 using SmartCourseManagement.API.Data;
 using SmartCourseManagement.API.DTOs;
 using SmartCourseManagement.API.Models;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace SmartCourseManagement.API.Services
 {
     /// <summary>
-    /// Handles user registration, login, and JWT token generation with refresh token support.
-    /// Access tokens expire in 15 minutes, refresh tokens expire in 7 days.
-    /// Injected via DI — does NOT expose DbContext to controllers.
+    /// Handles user registration, login, JWT generation, and refresh token lifecycle.
     /// </summary>
     public class AuthService : IAuthService
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
-        private const int AccessTokenExpirationMinutes = 15;
-        private const int RefreshTokenExpirationDays = 7;
 
         public AuthService(AppDbContext context, IConfiguration configuration)
         {
@@ -32,10 +28,9 @@ namespace SmartCourseManagement.API.Services
             _configuration = configuration;
         }
 
-        /// <summary>Registers a new user and returns JWT + refresh token.</summary>
+        /// <summary>Registers a new user and returns a JWT + refresh token.</summary>
         public async Task<AuthResponseDto> RegisterAsync(UserRegisterDto registerDto)
         {
-            // Check for duplicate email
             if (await _context.Users.AnyAsync(u => u.Email == registerDto.Email))
                 throw new Exception("A user with this email already exists.");
 
@@ -49,11 +44,10 @@ namespace SmartCourseManagement.API.Services
 
             _context.Users.Add(user);
 
-            // Auto-create InstructorProfile when registering as an Instructor
             if (user.Role == "Instructor")
             {
-                _context.InstructorProfiles.Add(new InstructorProfile 
-                { 
+                _context.InstructorProfiles.Add(new InstructorProfile
+                {
                     User = user,
                     Biography = string.Empty,
                     OfficeLocation = string.Empty
@@ -62,14 +56,12 @@ namespace SmartCourseManagement.API.Services
 
             await _context.SaveChangesAsync();
 
-            var (accessToken, expiryDate) = GenerateJwtToken(user);
-            var refreshToken = await GenerateAndSaveRefreshTokenAsync(user.Id);
+            var (jwt, refreshToken) = await GenerateTokensAsync(user);
 
             return new AuthResponseDto
             {
-                AccessToken = accessToken,
+                Token = jwt,
                 RefreshToken = refreshToken,
-                AccessTokenExpiry = expiryDate,
                 User = new UserReadDto
                 {
                     Id = user.Id,
@@ -80,25 +72,22 @@ namespace SmartCourseManagement.API.Services
             };
         }
 
-        /// <summary>Authenticates a user and returns JWT + refresh token if credentials are valid.</summary>
+        /// <summary>Authenticates a user and returns JWT + refresh token.</summary>
         public async Task<AuthResponseDto> LoginAsync(LoginDto loginDto)
         {
-            // Use AsNoTracking for read-only query
             var user = await _context.Users
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
 
             if (user == null || !VerifyPassword(loginDto.Password, user.PasswordHash))
-                return null;
+                return null!;
 
-            var (accessToken, expiryDate) = GenerateJwtToken(user);
-            var refreshToken = await GenerateAndSaveRefreshTokenAsync(user.Id);
+            var (jwt, refreshToken) = await GenerateTokensAsync(user);
 
             return new AuthResponseDto
             {
-                AccessToken = accessToken,
+                Token = jwt,
                 RefreshToken = refreshToken,
-                AccessTokenExpiry = expiryDate,
                 User = new UserReadDto
                 {
                     Id = user.Id,
@@ -109,59 +98,80 @@ namespace SmartCourseManagement.API.Services
             };
         }
 
-        /// <summary>Validates a refresh token and returns a new access token.</summary>
-        public async Task<RefreshTokenResponseDto> RefreshTokenAsync(string refreshTokenString)
+        /// <summary>
+        /// Validates a refresh token and issues a new JWT + refresh token pair (rotation).
+        /// Returns null if the token is invalid, expired, or revoked.
+        /// </summary>
+        public async Task<AuthResponseDto?> RefreshTokenAsync(string refreshToken)
         {
-            // Find the refresh token in the database
-            var refreshToken = await _context.RefreshTokens
-                .AsNoTracking()
-                .FirstOrDefaultAsync(rt => rt.Token == refreshTokenString && !rt.IsRevoked);
+            var stored = await _context.RefreshTokens
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.Token == refreshToken);
 
-            if (refreshToken == null || refreshToken.ExpiryDate < DateTime.UtcNow)
-                throw new Exception("Invalid or expired refresh token.");
+            if (stored == null || stored.IsRevoked || stored.ExpiresAt < DateTime.UtcNow)
+                return null;
 
-            // Get the user
-            var user = await _context.Users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == refreshToken.UserId);
+            // Revoke the old token (rotation: each token is single-use)
+            stored.IsRevoked = true;
+            await _context.SaveChangesAsync();
 
-            if (user == null)
-                throw new Exception("User associated with refresh token not found.");
+            var (newJwt, newRefreshToken) = await GenerateTokensAsync(stored.User);
 
-            // Generate a new access token
-            var (accessToken, expiryDate) = GenerateJwtToken(user);
-
-            return new RefreshTokenResponseDto
+            return new AuthResponseDto
             {
-                AccessToken = accessToken,
-                AccessTokenExpiry = expiryDate
+                Token = newJwt,
+                RefreshToken = newRefreshToken,
+                User = new UserReadDto
+                {
+                    Id = stored.User.Id,
+                    Name = stored.User.Name,
+                    Email = stored.User.Email,
+                    Role = stored.User.Role
+                }
             };
         }
 
-        /// <summary>Hashes a plain-text password using BCrypt.</summary>
-        public string HashPassword(string password)
+        public string HashPassword(string password) =>
+            BCrypt.Net.BCrypt.HashPassword(password);
+
+        public bool VerifyPassword(string password, string hashedPassword) =>
+            BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+
+        // ── Private helpers ──────────────────────────────────────────────────────
+
+        private async Task<(string jwt, string refreshToken)> GenerateTokensAsync(User user)
         {
-            return BCrypt.Net.BCrypt.HashPassword(password);
+            var jwt = GenerateJwtToken(user);
+            var refreshToken = await CreateRefreshTokenAsync(user.Id);
+            return (jwt, refreshToken);
         }
 
-        /// <summary>Verifies a plain-text password against a BCrypt hash.</summary>
-        public bool VerifyPassword(string password, string hashedPassword)
+        private async Task<string> CreateRefreshTokenAsync(int userId)
         {
-            return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+            var tokenBytes = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(tokenBytes);
+            var token = Convert.ToBase64String(tokenBytes);
+
+            _context.RefreshTokens.Add(new RefreshToken
+            {
+                Token = token,
+                UserId = userId,
+                ExpiresAt = DateTime.UtcNow.AddDays(30)
+            });
+
+            await _context.SaveChangesAsync();
+            return token;
         }
 
-        /// <summary>
-        /// Generates a JWT access token (15-minute expiration).
-        /// Returns tuple of (token, expiryDate).
-        /// </summary>
-        private (string token, DateTime expiryDate) GenerateJwtToken(User user)
+        private string GenerateJwtToken(User user)
         {
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Name, user.Name),
-                new Claim(ClaimTypes.Role, user.Role) // Role used by [Authorize(Roles = "...")]
+                new Claim(ClaimTypes.Role, user.Role)
             };
 
             var jwtKey = _configuration["Jwt:Key"];
@@ -171,48 +181,15 @@ namespace SmartCourseManagement.API.Services
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var expiryDate = DateTime.UtcNow.AddMinutes(AccessTokenExpirationMinutes);
-
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: expiryDate,
+                expires: DateTime.UtcNow.AddHours(1),
                 signingCredentials: creds
             );
 
-            return (new JwtSecurityTokenHandler().WriteToken(token), expiryDate);
-        }
-
-        /// <summary>
-        /// Generates a cryptographically secure refresh token and saves it to the database.
-        /// Refresh tokens expire in 7 days.
-        /// </summary>
-        private async Task<string> GenerateAndSaveRefreshTokenAsync(int userId)
-        {
-            // Generate a random 64-byte token
-            var randomNumber = new byte[64];
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(randomNumber);
-            }
-            var refreshTokenString = Convert.ToBase64String(randomNumber);
-
-            // Save to database
-            var refreshToken = new RefreshToken
-            {
-                Token = refreshTokenString,
-                UserId = userId,
-                ExpiryDate = DateTime.UtcNow.AddDays(RefreshTokenExpirationDays),
-                IsRevoked = false,
-                IpAddress = "127.0.0.1", // TODO: Get from HttpContext in real app
-                UserAgent = "API Client" // TODO: Get from HttpContext in real app
-            };
-
-            _context.RefreshTokens.Add(refreshToken);
-            await _context.SaveChangesAsync();
-
-            return refreshTokenString;
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
