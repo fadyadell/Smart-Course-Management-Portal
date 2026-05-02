@@ -41,7 +41,7 @@ export default function ManageCourses() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Manage Courses</h1>
-          <p className="page-subtitle">Create, edit, and manage course offerings</p>
+          <p className="page-subtitle">Create and manage course offerings</p>
         </div>
         <button
           className="btn btn-primary"
@@ -78,7 +78,7 @@ export default function ManageCourses() {
                 <th>Credits</th>
                 <th>Instructor</th>
                 <th>Created</th>
-                {canManageCourses && <th>Actions</th>}
+                {isAdmin && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -100,7 +100,7 @@ export default function ManageCourses() {
                   <td className="td-muted">
                     {new Date(c.createdAt).toLocaleDateString()}
                   </td>
-                  {canManageCourses && (
+                  {isAdmin && (
                     <td>
                       <button
                         className="btn btn-secondary btn-sm"

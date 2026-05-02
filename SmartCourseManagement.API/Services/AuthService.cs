@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using SmartCourseManagement.API.Data;
 using SmartCourseManagement.API.DTOs;
@@ -32,26 +31,17 @@ namespace SmartCourseManagement.API.Services
         private const int AccessTokenExpirationMinutes = 15;
         private const int RefreshTokenExpirationDays = 7;
 
-        public AuthService(
-            AppDbContext context,
-            IConfiguration configuration,
-            IEmailService emailService,
-            ILogger<AuthService> logger)
+        public AuthService(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
             _configuration = configuration;
-            _emailService = emailService;
-            _logger = logger;
         }
 
         /// <summary>Registers a new user and returns JWT + refresh token.</summary>
         public async Task<AuthResponseDto> RegisterAsync(UserRegisterDto registerDto)
         {
             if (await _context.Users.AnyAsync(u => u.Email == registerDto.Email))
-            {
-                _logger.LogWarning("Registration failed – duplicate email: {Email}", SanitizeForLog(registerDto.Email));
                 throw new Exception("A user with this email already exists.");
-            }
 
             var user = new User
             {
@@ -97,6 +87,7 @@ namespace SmartCourseManagement.API.Services
         public async Task<AuthResponseDto> LoginAsync(LoginDto loginDto)
         {
             var user = await _context.Users
+                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
 
             if (user == null || !VerifyPassword(loginDto.Password, user.PasswordHash))
@@ -192,7 +183,7 @@ namespace SmartCourseManagement.API.Services
                 signingCredentials: creds
             );
 
-            return (new JwtSecurityTokenHandler().WriteToken(token), expiryDate);
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         /// <summary>

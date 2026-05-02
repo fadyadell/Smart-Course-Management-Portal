@@ -12,6 +12,8 @@ namespace SmartCourseManagement.API.Models
     /// </summary>
     public class Course : BaseEntity
     {
+        [Key]
+        public int Id { get; set; }
 
         [Required]
         [MaxLength(200)]
@@ -42,7 +44,6 @@ namespace SmartCourseManagement.API.Models
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         public string CreatedBy { get; set; } = string.Empty;
         public string UpdatedBy { get; set; } = string.Empty;
-        public bool IsDeleted { get; set; } = false;
 
         // Many-to-Many (via Enrollment junction): Many students enroll in this course
         public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();

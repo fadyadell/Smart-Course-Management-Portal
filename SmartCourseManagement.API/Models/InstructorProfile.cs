@@ -17,13 +17,13 @@ namespace SmartCourseManagement.API.Models
         public int UserId { get; set; }
 
         [ForeignKey("UserId")]
-        public User User { get; set; } = null!;
+        public User User { get; set; }
 
         [MaxLength(500)]
-        public string? Biography { get; set; }
+        public string Biography { get; set; }
 
         [MaxLength(100)]
-        public string? OfficeLocation { get; set; }
+        public string OfficeLocation { get; set; }
 
         // One-to-Many: An instructor teaches many courses
         public ICollection<Course> Courses { get; set; } = new List<Course>();

@@ -104,24 +104,12 @@ namespace SmartCourseManagement.API.Controllers
         /// The record is retained in the database for history purposes.
         /// </summary>
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin,Instructor")]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(204)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _courseService.DeleteCourseAsync(id);
-            if (!result) return NotFound(new { message = $"Course {id} not found." });
-            return NoContent();
-        }
-
-        /// <summary>Hard-delete a course permanently. Admin only.</summary>
-        [HttpDelete("{id}/hard")]
-        [Authorize(Roles = "Admin")]
-        [ProducesResponseType(204)]
-        [ProducesResponseType(404)]
-        public async Task<IActionResult> HardDelete(int id)
-        {
-            var result = await _courseService.HardDeleteCourseAsync(id);
             if (!result) return NotFound(new { message = $"Course {id} not found." });
             return NoContent();
         }

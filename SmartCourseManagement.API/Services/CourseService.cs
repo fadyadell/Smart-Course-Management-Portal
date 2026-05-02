@@ -97,7 +97,7 @@ namespace SmartCourseManagement.API.Services
         {
             return await _context.Courses
                 .AsNoTracking()
-                .Where(c => c.Id == id && !c.IsDeleted)
+                .Where(c => c.Id == id)
                 .Select(c => new CourseReadDto
                 {
                     Id = c.Id,
@@ -113,60 +113,6 @@ namespace SmartCourseManagement.API.Services
                     IsDeleted = c.IsDeleted
                 })
                 .FirstOrDefaultAsync();
-        }
-
-        /// <summary>Returns paginated and filtered courses with search support.</summary>
-        public async Task<PaginationResponseDto<CourseReadDto>> GetCoursesPagedAsync(PaginationRequestDto paginationDto)
-        {
-            var query = _context.Courses.AsNoTracking();
-
-            // Apply search filter on title or description
-            if (!string.IsNullOrEmpty(paginationDto.SearchTerm))
-            {
-                var search = paginationDto.SearchTerm.ToLower();
-                query = query.Where(c => 
-                    c.Title.ToLower().Contains(search) || 
-                    c.Description.ToLower().Contains(search));
-            }
-
-            // Get total count before pagination
-            var totalItems = await query.CountAsync();
-
-            // Apply sorting
-            query = paginationDto.SortDescending
-                ? query.OrderByDescending(c => EF.Property<object>(c, paginationDto.SortBy))
-                : query.OrderBy(c => EF.Property<object>(c, paginationDto.SortBy));
-
-            // Apply pagination
-            var items = await query
-                .Skip((paginationDto.Page - 1) * paginationDto.PageSize)
-                .Take(paginationDto.PageSize)
-                .Select(c => new CourseReadDto
-                {
-                    Id = c.Id,
-                    Title = c.Title,
-                    Description = c.Description,
-                    Credits = c.Credits,
-                    InstructorId = c.InstructorId,
-                    InstructorName = c.Instructor.User.Name,
-                    CreatedAt = c.CreatedAt,
-                    CreatedBy = c.CreatedBy,
-                    UpdatedAt = c.UpdatedAt,
-                    UpdatedBy = c.UpdatedBy,
-                    IsDeleted = c.IsDeleted
-                })
-                .ToListAsync();
-
-            var totalPages = (totalItems + paginationDto.PageSize - 1) / paginationDto.PageSize;
-
-            return new PaginationResponseDto<CourseReadDto>
-            {
-                Items = items,
-                CurrentPage = paginationDto.Page,
-                PageSize = paginationDto.PageSize,
-                TotalItems = totalItems,
-                TotalPages = totalPages
-            };
         }
 
         /// <summary>Creates a new course and returns the created CourseReadDto.</summary>
@@ -190,7 +136,7 @@ namespace SmartCourseManagement.API.Services
         public async Task<bool> UpdateCourseAsync(int id, CourseUpdateDto courseDto)
         {
             var course = await _context.Courses.FindAsync(id);
-            if (course == null || course.IsDeleted) return false;
+            if (course == null) return false;
 
             if (courseDto.Title != null) course.Title = courseDto.Title;
             if (courseDto.Description != null) course.Description = courseDto.Description;

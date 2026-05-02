@@ -3,8 +3,6 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using SmartCourseManagement.API.Models;
-using System;
-using System.Collections.Generic;
 
 namespace SmartCourseManagement.API.Data
 {
@@ -20,7 +18,6 @@ namespace SmartCourseManagement.API.Data
         public AppDbContext(DbContextOptions<AppDbContext> options, IHttpContextAccessor httpContextAccessor)
             : base(options)
         {
-            _httpContextAccessor = httpContextAccessor;
         }
 
         public DbSet<User> Users { get; set; }
@@ -107,16 +104,6 @@ namespace SmartCourseManagement.API.Data
                 .HasOne(u => u.InstructorProfile)
                 .WithOne(p => p.User)
                 .HasForeignKey<InstructorProfile>(p => p.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // =============================================
-            // ONE-TO-MANY: User -> RefreshTokens
-            // A user can have many refresh tokens (for multiple devices)
-            // =============================================
-            modelBuilder.Entity<User>()
-                .HasMany<RefreshToken>()
-                .WithOne(rt => rt.User)
-                .HasForeignKey(rt => rt.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             // =============================================
