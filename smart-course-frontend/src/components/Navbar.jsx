@@ -84,6 +84,20 @@ export default function Navbar() {
             All Courses
           </Link>
         )}
+        {canManageCourses && (
+          <Link
+            to="/students"
+            className={`nav-link ${isActive('/students') ? 'active' : ''}`}
+          >
+            Students
+          </Link>
+        )}
+        <Link
+          to="/instructors"
+          className={`nav-link ${isActive('/instructors') ? 'active' : ''}`}
+        >
+          Instructors
+        </Link>
       </div>
 
       <div className="navbar-user">

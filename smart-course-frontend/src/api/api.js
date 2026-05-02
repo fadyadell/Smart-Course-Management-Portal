@@ -227,3 +227,77 @@ export async function getStudentById(id) {
   const res = await api.get(`/students/${id}`);
   return res.data;
 }
+
+// ─────────────────────────────────────────────
+//  Student Endpoints
+// ─────────────────────────────────────────────
+
+/**
+ * Get all students (Admin/Instructor only).
+ * GET /api/students
+ */
+export async function getStudents() {
+  const res = await apiFetch('/students');
+  if (!res.ok) throw new Error('Failed to fetch students.');
+  return res.json();
+}
+
+/**
+ * Get a student by ID (Admin/Instructor only).
+ * GET /api/students/{id}
+ */
+export async function getStudentById(id) {
+  const res = await apiFetch(`/students/${id}`);
+  if (!res.ok) throw new Error(`Student ${id} not found.`);
+  return res.json();
+}
+
+// ─────────────────────────────────────────────
+//  Instructor Endpoints
+// ─────────────────────────────────────────────
+
+/**
+ * Get all instructor profiles.
+ * GET /api/instructors
+ */
+export async function getInstructors() {
+  const res = await apiFetch('/instructors');
+  if (!res.ok) throw new Error('Failed to fetch instructors.');
+  return res.json();
+}
+
+/**
+ * Get an instructor profile by ID.
+ * GET /api/instructors/{id}
+ */
+export async function getInstructorById(id) {
+  const res = await apiFetch(`/instructors/${id}`);
+  if (!res.ok) throw new Error(`Instructor ${id} not found.`);
+  return res.json();
+}
+
+/**
+ * Update the current instructor's profile (biography, office location).
+ * PUT /api/instructors/profile
+ * Body: { biography, officeLocation }
+ */
+export async function updateInstructorProfile(profileData) {
+  const res = await apiFetch('/instructors/profile', {
+    method: 'PUT',
+    body: JSON.stringify(profileData),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to update profile.');
+  }
+  return true;
+}
+
+/**
+ * Update a course (Admin/Instructor only) — full replacement with PATCH-style body.
+ * PUT /api/courses/{id}
+ * Body: { title, description, credits }
+ */
+export async function updateCourseById(id, courseData) {
+  return updateCourse(id, courseData);
+}

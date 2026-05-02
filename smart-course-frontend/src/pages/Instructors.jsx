@@ -3,106 +3,117 @@ import { getInstructors, updateInstructorProfile } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 
 export default function Instructors() {
-  const { user, isInstructor } = useAuth();
+  const { isInstructor, user } = useAuth();
+
   const [instructors, setInstructors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // Profile edit state (for the logged-in instructor)
-  const [isEditing, setIsEditing] = useState(false);
-  const [profileForm, setProfileForm] = useState({
-    biography: '',
-    officeLocation: ''
-  });
-  const [updateLoading, setUpdateLoading] = useState(false);
 
-  useEffect(() => {
-    fetchInstructors();
-  }, []);
+  // Edit own profile (Instructor only)
+  const [editMode, setEditMode] = useState(false);
+  const [profileForm, setProfileForm] = useState({ biography: '', officeLocation: '' });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState('');
 
   const fetchInstructors = async () => {
+    setLoading(true);
+    setError('');
     try {
-      setLoading(true);
       const data = await getInstructors();
-      setInstructors(data);
-      
-      // If the current user is an instructor, pre-fill their profile data for editing
-      if (isInstructor) {
-        const myProfile = data.find(i => i.userId === user.id);
-        if (myProfile) {
-          setProfileForm({
-            biography: myProfile.biography || '',
-            officeLocation: myProfile.officeLocation || ''
-          });
-        }
-      }
+      setInstructors(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError('Failed to load instructors.');
+      setError(err.message || 'Failed to load instructors.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdateProfile = async (e) => {
+  useEffect(() => {
+    fetchInstructors();
+  }, []);
+
+  // Pre-fill edit form with current profile data
+  const handleEditClick = (instructor) => {
+    setProfileForm({
+      biography: instructor.biography || '',
+      officeLocation: instructor.officeLocation || '',
+    });
+    setSaveError('');
+    setSaveSuccess('');
+    setEditMode(true);
+  };
+
+  const handleProfileSave = async (e) => {
     e.preventDefault();
+    setSaveError('');
+    setSaveSuccess('');
+    setSaving(true);
     try {
-      setUpdateLoading(true);
       await updateInstructorProfile(profileForm);
-      setIsEditing(false);
-      fetchInstructors(); // Refresh list
+      setSaveSuccess('Profile updated successfully!');
+      setEditMode(false);
+      fetchInstructors();
     } catch (err) {
-      alert('Failed to update profile.');
+      setSaveError(err.message || 'Failed to update profile.');
     } finally {
-      setUpdateLoading(false);
+      setSaving(false);
     }
   };
+
+  // Find current instructor's profile (matched by userId)
+  const myProfile = instructors.find((i) => i.userId === user?.id);
 
   return (
     <div className="page-wrapper">
       <div className="page-header">
-        <h1>Instructor Directory</h1>
-        <p>Explore our qualified teaching staff.</p>
-        {isInstructor && !isEditing && (
-          <button 
-            className="btn btn-primary"
-            onClick={() => setIsEditing(true)}
-          >
-            Edit My Profile
+        <div>
+          <h1 className="page-title">Instructors</h1>
+          <p className="page-subtitle">Browse instructor profiles</p>
+        </div>
+        {isInstructor && myProfile && !editMode && (
+          <button className="btn btn-primary" onClick={() => handleEditClick(myProfile)}>
+            ✏ Edit My Profile
           </button>
         )}
       </div>
 
-      {isEditing && (
-        <div className="card animation-slide-in" style={{ marginBottom: '2rem' }}>
-          <h3>Update Your Profile</h3>
-          <form onSubmit={handleUpdateProfile} className="profile-form">
+      {/* Edit Profile Form — Instructor only */}
+      {isInstructor && editMode && (
+        <div className="manage-form-card">
+          <h2 className="form-heading">Update My Profile</h2>
+          <form onSubmit={handleProfileSave} className="manage-form" noValidate>
             <div className="form-group">
-              <label>Office Location</label>
-              <input 
+              <label htmlFor="biography">Biography</label>
+              <textarea
+                id="biography"
+                value={profileForm.biography}
+                onChange={(e) => setProfileForm((p) => ({ ...p, biography: e.target.value }))}
+                rows={4}
+                placeholder="Tell students about yourself…"
+                maxLength={500}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="officeLocation">Office Location</label>
+              <input
+                id="officeLocation"
                 type="text"
                 value={profileForm.officeLocation}
-                onChange={(e) => setProfileForm({...profileForm, officeLocation: e.target.value})}
-                placeholder="e.g. Building A, Room 101"
+                onChange={(e) => setProfileForm((p) => ({ ...p, officeLocation: e.target.value }))}
+                placeholder="e.g. Room 204, Building B"
+                maxLength={100}
               />
             </div>
-            <div className="form-group">
-              <label>Biography</label>
-              <textarea 
-                value={profileForm.biography}
-                onChange={(e) => setProfileForm({...profileForm, biography: e.target.value})}
-                placeholder="Tell us about your background..."
-                rows={4}
-              />
-            </div>
+
+            {saveError && <div className="alert alert-error"><span>⚠</span> {saveError}</div>}
+            {saveSuccess && <div className="alert alert-success"><span>✓</span> {saveSuccess}</div>}
+
             <div className="form-actions">
-              <button type="submit" className="btn btn-success" disabled={updateLoading}>
-                {updateLoading ? 'Saving...' : 'Save Changes'}
+              <button type="submit" className="btn btn-primary" disabled={saving}>
+                {saving ? <span className="loading-spinner-sm" /> : 'Save Changes'}
               </button>
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
-                onClick={() => setIsEditing(false)}
-              >
+              <button type="button" className="btn btn-secondary" onClick={() => setEditMode(false)}>
                 Cancel
               </button>
             </div>
@@ -110,25 +121,72 @@ export default function Instructors() {
         </div>
       )}
 
-      {loading ? (
-        <div className="loading-spinner" />
-      ) : error ? (
-        <div className="alert alert-error">{error}</div>
-      ) : (
-        <div className="instructor-grid">
-          {instructors.map((inst) => (
-            <div key={inst.userId} className="instructor-card card">
-              <div className="inst-avatar">
-                {inst.name.charAt(0)}
+      {loading && (
+        <div className="loading-state">
+          <div className="loading-spinner" />
+          <p>Loading instructors…</p>
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="alert alert-error">
+          <span>⚠</span> {error}{' '}
+          <button className="link-btn" onClick={fetchInstructors}>
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && instructors.length === 0 && (
+        <div className="empty-state">
+          <div className="empty-icon">👨‍🏫</div>
+          <h3>No instructors found</h3>
+          <p>No instructor profiles are available yet.</p>
+        </div>
+      )}
+
+      {!loading && !error && instructors.length > 0 && (
+        <div className="instructors-grid">
+          {instructors.map((instructor) => (
+            <div key={instructor.id} className="instructor-card">
+              <div className="instructor-card-header">
+                <div className="instructor-avatar">
+                  {instructor.userName?.[0]?.toUpperCase() ?? '?'}
+                </div>
+                <div>
+                  <h3 className="instructor-name">{instructor.userName}</h3>
+                  <span className="role-badge role-instructor">Instructor</span>
+                </div>
               </div>
-              <div className="inst-info">
-                <h3>{inst.name}</h3>
-                <p className="inst-email">{inst.email}</p>
-                {inst.officeLocation && (
-                  <p className="inst-office">📍 {inst.officeLocation}</p>
+
+              <div className="instructor-card-body">
+                {instructor.biography ? (
+                  <p className="instructor-bio">{instructor.biography}</p>
+                ) : (
+                  <p className="instructor-bio td-muted" style={{ fontStyle: 'italic' }}>
+                    No biography provided.
+                  </p>
                 )}
-                {inst.biography && (
-                  <p className="inst-bio">{inst.biography}</p>
+
+                {instructor.officeLocation && (
+                  <div className="meta-item" style={{ marginTop: '0.75rem' }}>
+                    <span className="meta-icon">🏢</span>
+                    <span>{instructor.officeLocation}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="instructor-card-footer">
+                <span className="td-muted" style={{ fontSize: '0.8rem' }}>
+                  📅 Joined {new Date(instructor.createdAt).toLocaleDateString()}
+                </span>
+                {isInstructor && instructor.userId === user?.id && (
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => handleEditClick(instructor)}
+                  >
+                    ✏ Edit
+                  </button>
                 )}
               </div>
             </div>
