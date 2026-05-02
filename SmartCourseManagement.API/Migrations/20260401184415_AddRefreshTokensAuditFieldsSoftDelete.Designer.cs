@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmartCourseManagement.API.Data;
 
@@ -11,9 +12,11 @@ using SmartCourseManagement.API.Data;
 namespace SmartCourseManagement.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260401184415_AddRefreshTokensAuditFieldsSoftDelete")]
+    partial class AddRefreshTokensAuditFieldsSoftDelete
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -33,19 +36,8 @@ namespace SmartCourseManagement.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<int>("Credits")
                         .HasColumnType("int");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeletedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -66,10 +58,6 @@ namespace SmartCourseManagement.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("InstructorId");
@@ -80,41 +68,35 @@ namespace SmartCourseManagement.API.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 3, 23, 7, 30, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Credits = 3,
                             Description = "Learn the basics of building high-performance Web APIs.",
                             InstructorId = 1,
                             IsDeleted = false,
                             Title = "Introduction to ASP.NET Core",
-                            UpdatedAt = new DateTime(2025, 3, 23, 7, 30, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "System"
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2025, 3, 23, 7, 30, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Credits = 4,
                             Description = "Master complex relationships and performance tuning.",
                             InstructorId = 1,
                             IsDeleted = false,
                             Title = "Advanced Entity Framework Core",
-                            UpdatedAt = new DateTime(2025, 3, 23, 7, 30, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "System"
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(2025, 3, 23, 7, 30, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Credits = 3,
                             Description = "Build responsive and vibrant SPAs without heavy frameworks.",
                             InstructorId = 1,
                             IsDeleted = false,
                             Title = "Frontend Mastery with Vanilla JS",
-                            UpdatedAt = new DateTime(2025, 3, 23, 7, 30, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "System"
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 
@@ -129,35 +111,11 @@ namespace SmartCourseManagement.API.Migrations
                     b.Property<int>("CourseId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeletedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<DateTime>("EnrollmentDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
                     b.Property<int>("StudentId")
                         .HasColumnType("int");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
@@ -181,32 +139,8 @@ namespace SmartCourseManagement.API.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeletedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
                     b.Property<string>("OfficeLocation")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -225,12 +159,7 @@ namespace SmartCourseManagement.API.Migrations
                         {
                             Id = 1,
                             Biography = "Professor of Computer Science with 15 years experience.",
-                            CreatedAt = new DateTime(2025, 3, 23, 7, 30, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            IsDeleted = false,
                             OfficeLocation = "Science Building, Lab 404",
-                            UpdatedAt = new DateTime(2025, 3, 23, 7, 30, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "System",
                             UserId = 1
                         });
                 });
@@ -246,50 +175,15 @@ namespace SmartCourseManagement.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("DeletedAt")
+                    b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("DeletedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("IpAddress")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
 
                     b.Property<bool>("IsRevoked")
                         .HasColumnType("bit");
 
-                    b.Property<DateTime?>("RevokedDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("UserAgent")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
@@ -312,24 +206,10 @@ namespace SmartCourseManagement.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DeletedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -348,10 +228,6 @@ namespace SmartCourseManagement.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
@@ -363,15 +239,12 @@ namespace SmartCourseManagement.API.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 3, 23, 7, 30, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Email = "instructor@example.com",
-                            IsDeleted = false,
                             Name = "Dr. Jane Smith",
-                            PasswordHash = "$2a$11$XdmZbeEuxVdBoHMI/IqjpO3BhIDs6wgq8iXmVDmRS8RD4Ih3fiNrm",
+                            PasswordHash = "$2a$11$S8mJpx/o7u6H1iU96J10nuvL1gYhX6A9N5X/B8p3bY7fF.E2f/v1i",
                             Role = "Instructor",
-                            UpdatedAt = new DateTime(2025, 3, 23, 7, 30, 0, 0, DateTimeKind.Utc),
-                            UpdatedBy = "System"
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 
@@ -419,7 +292,7 @@ namespace SmartCourseManagement.API.Migrations
             modelBuilder.Entity("SmartCourseManagement.API.Models.RefreshToken", b =>
                 {
                     b.HasOne("SmartCourseManagement.API.Models.User", "User")
-                        .WithMany()
+                        .WithMany("RefreshTokens")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

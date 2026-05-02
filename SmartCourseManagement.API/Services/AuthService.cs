@@ -1,4 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -35,7 +40,6 @@ namespace SmartCourseManagement.API.Services
         /// <summary>Registers a new user and returns JWT + refresh token.</summary>
         public async Task<AuthResponseDto> RegisterAsync(UserRegisterDto registerDto)
         {
-            // Check for duplicate email
             if (await _context.Users.AnyAsync(u => u.Email == registerDto.Email))
                 throw new Exception("A user with this email already exists.");
 
@@ -49,11 +53,10 @@ namespace SmartCourseManagement.API.Services
 
             _context.Users.Add(user);
 
-            // Auto-create InstructorProfile when registering as an Instructor
             if (user.Role == "Instructor")
             {
-                _context.InstructorProfiles.Add(new InstructorProfile 
-                { 
+                _context.InstructorProfiles.Add(new InstructorProfile
+                {
                     User = user,
                     Biography = string.Empty,
                     OfficeLocation = string.Empty
@@ -83,13 +86,12 @@ namespace SmartCourseManagement.API.Services
         /// <summary>Authenticates a user and returns JWT + refresh token if credentials are valid.</summary>
         public async Task<AuthResponseDto> LoginAsync(LoginDto loginDto)
         {
-            // Use AsNoTracking for read-only query
             var user = await _context.Users
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
 
             if (user == null || !VerifyPassword(loginDto.Password, user.PasswordHash))
-                return null;
+                return null!;
 
             var (accessToken, expiryDate) = GenerateJwtToken(user);
             var refreshToken = await GenerateAndSaveRefreshTokenAsync(user.Id);
@@ -161,7 +163,7 @@ namespace SmartCourseManagement.API.Services
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Name, user.Name),
-                new Claim(ClaimTypes.Role, user.Role) // Role used by [Authorize(Roles = "...")]
+                new Claim(ClaimTypes.Role, user.Role)
             };
 
             var jwtKey = _configuration["Jwt:Key"];

@@ -1,4 +1,7 @@
+using System;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using SmartCourseManagement.API.Models;
 using System;
 using System.Collections.Generic;
@@ -95,7 +98,6 @@ namespace SmartCourseManagement.API.Data
 
             // =============================================
             // ONE-TO-ONE: User <-> InstructorProfile
-            // A user with role Instructor has exactly one InstructorProfile
             // =============================================
             modelBuilder.Entity<User>()
                 .HasOne(u => u.InstructorProfile)
@@ -115,7 +117,6 @@ namespace SmartCourseManagement.API.Data
 
             // =============================================
             // ONE-TO-MANY: InstructorProfile -> Courses
-            // One instructor teaches many courses
             // =============================================
             modelBuilder.Entity<InstructorProfile>()
                 .HasMany(p => p.Courses)
@@ -125,7 +126,6 @@ namespace SmartCourseManagement.API.Data
 
             // =============================================
             // MANY-TO-MANY: Student (User) <-> Course (via Enrollment)
-            // Many students can enroll in many courses
             // =============================================
             modelBuilder.Entity<Enrollment>()
                 .HasOne(e => e.Student)
@@ -137,6 +137,15 @@ namespace SmartCourseManagement.API.Data
                 .HasOne(e => e.Course)
                 .WithMany(c => c.Enrollments)
                 .HasForeignKey(e => e.CourseId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // =============================================
+            // ONE-TO-MANY: User -> RefreshTokens
+            // =============================================
+            modelBuilder.Entity<RefreshToken>()
+                .HasOne(r => r.User)
+                .WithMany(u => u.RefreshTokens)
+                .HasForeignKey(r => r.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Unique email constraint
