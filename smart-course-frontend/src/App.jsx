@@ -4,11 +4,13 @@ import Navbar from './components/Navbar';
 import PrivateRoute from './components/PrivateRoute';
 
 // Pages
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
 import MyEnrollments from './pages/MyEnrollments';
 import ManageCourses from './pages/ManageCourses';
+import CourseForm from './pages/CourseForm';
 import Students from './pages/Students';
 import Instructors from './pages/Instructors';
 
@@ -32,8 +34,9 @@ function AppShell() {
       <main className="app-main">
         <Routes>
           {/* Public */}
+          <Route path="/" element={<Home />} />
           <Route
-            path="/"
+            path="/login"
             element={
               <PublicRoute>
                 <Login />
@@ -75,6 +78,24 @@ function AppShell() {
             element={
               <PrivateRoute roles={['Admin', 'Instructor']}>
                 <ManageCourses />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/courses/new"
+            element={
+              <PrivateRoute roles={['Admin', 'Instructor']}>
+                <CourseForm />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/courses/edit/:id"
+            element={
+              <PrivateRoute roles={['Admin', 'Instructor']}>
+                <CourseForm />
               </PrivateRoute>
             }
           />
