@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
-  const { user, isAuthenticated, logout, canManageCourses } = useAuth();
+  const { user, isAuthenticated, logout, canManageCourses, isInstructor } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -59,21 +59,13 @@ export default function Navbar() {
                 My Enrollments
               </Link>
             )}
-            {canManageCourses && (
-              <>
-                <Link
-                  to="/students"
-                  className={`nav-link ${isActive('/students') ? 'active' : ''}`}
-                >
-                  Students
-                </Link>
-                <Link
-                  to="/manage-courses"
-                  className={`nav-link ${isActive('/manage-courses') ? 'active' : ''}`}
-                >
-                  Manage Courses
-                </Link>
-              </>
+            {isInstructor && (
+              <Link
+                to="/enrollments"
+                className={`nav-link ${isActive('/enrollments') ? 'active' : ''}`}
+              >
+                Students & Enrollments
+              </Link>
             )}
           </>
         ) : (
@@ -84,20 +76,6 @@ export default function Navbar() {
             All Courses
           </Link>
         )}
-        {canManageCourses && (
-          <Link
-            to="/students"
-            className={`nav-link ${isActive('/students') ? 'active' : ''}`}
-          >
-            Students
-          </Link>
-        )}
-        <Link
-          to="/instructors"
-          className={`nav-link ${isActive('/instructors') ? 'active' : ''}`}
-        >
-          Instructors
-        </Link>
       </div>
 
       <div className="navbar-user">

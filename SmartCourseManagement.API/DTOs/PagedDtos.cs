@@ -39,6 +39,14 @@ namespace SmartCourseManagement.API.DTOs
         public int? MaxCredits { get; set; }
     }
 
+    public class CourseQueryParams : PagedRequest
+    {
+        public string? Search { get; set; }
+        public int? InstructorId { get; set; }
+        public int? Credits { get; set; }
+        public bool SortDesc { get; set; }
+    }
+
     /// <summary>Request DTO for filtering enrollments.</summary>
     public class EnrollmentFilterRequest : PagedRequest
     {
@@ -50,29 +58,20 @@ namespace SmartCourseManagement.API.DTOs
     }
 
     /// <summary>Generic paginated response wrapper.</summary>
-    public class PagedResponse<T>
+    public class PagedResult<T>
     {
-        /// <summary>The items in this page.</summary>
-        public IEnumerable<T> Data { get; set; } = new List<T>();
-
-        /// <summary>Total number of records matching the filter (before paging).</summary>
-        public int Total { get; set; }
-
-        /// <summary>Current page number (1-based).</summary>
+        public IEnumerable<T> Items { get; set; } = new List<T>();
+        public int TotalCount { get; set; }
         public int Page { get; set; }
-
-        /// <summary>Number of items per page.</summary>
         public int PageSize { get; set; }
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalCount / PageSize) : 0;
 
-        /// <summary>Total number of pages available.</summary>
-        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)Total / PageSize) : 0;
+        public PagedResult() { }
 
-        public PagedResponse() { }
-
-        public PagedResponse(IEnumerable<T> data, int total, int page, int pageSize)
+        public PagedResult(IEnumerable<T> items, int totalCount, int page, int pageSize)
         {
-            Data = data;
-            Total = total;
+            Items = items;
+            TotalCount = totalCount;
             Page = page;
             PageSize = pageSize;
         }
@@ -109,3 +108,4 @@ namespace SmartCourseManagement.API.DTOs
             };
     }
 }
+

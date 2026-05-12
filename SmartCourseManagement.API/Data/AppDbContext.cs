@@ -1,5 +1,9 @@
 using System;
 using System.Linq;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using SmartCourseManagement.API.Models;
@@ -18,6 +22,7 @@ namespace SmartCourseManagement.API.Data
         public AppDbContext(DbContextOptions<AppDbContext> options, IHttpContextAccessor httpContextAccessor)
             : base(options)
         {
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public DbSet<User> Users { get; set; }
@@ -37,21 +42,11 @@ namespace SmartCourseManagement.API.Data
         }
 
         /// <summary>
-        /// Intercepts SaveChangesAsync to auto-set audit fields.
-        /// </summary>
-        public override async System.Threading.Tasks.Task<int> SaveChangesAsync(
-            System.Threading.CancellationToken cancellationToken = default)
-        {
-            UpdateAuditFields();
-            return await base.SaveChangesAsync(cancellationToken);
-        }
-
-        /// <summary>
         /// Sets CreatedAt, CreatedBy, UpdatedAt, UpdatedBy, DeletedAt, DeletedBy for BaseEntity instances.
         /// </summary>
         private void UpdateAuditFields()
         {
-            var createdBy = "System"; // In production, extract from HttpContext: httpContextAccessor?.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "System";
+            var createdBy = _httpContextAccessor?.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "System";
 
             foreach (var entry in ChangeTracker.Entries<BaseEntity>())
             {
@@ -64,6 +59,7 @@ namespace SmartCourseManagement.API.Data
                         entry.Entity.CreatedBy = createdBy;
                         entry.Entity.UpdatedAt = now;
                         entry.Entity.UpdatedBy = createdBy;
+                        entry.Entity.IsDeleted = false;
                         break;
 
                     case EntityState.Modified:
@@ -145,7 +141,6 @@ namespace SmartCourseManagement.API.Data
                 .IsUnique();
 
             // SEED DATA
-            // Note: Password is 'InstructorPass123!' hashed with BCrypt
             var seedDateTime = new DateTime(2025, 3, 23, 7, 30, 0, DateTimeKind.Utc);
             modelBuilder.Entity<User>().HasData(
                 new User 
@@ -221,37 +216,11 @@ namespace SmartCourseManagement.API.Data
             );
         }
 
-        /// <summary>
-        /// Overrides SaveChangesAsync to automatically populate audit fields.
-        /// - CreatedAt / CreatedBy set only on first add.
-        /// - UpdatedAt / UpdatedBy refreshed on every modification.
-        /// - IsDeleted set to false on creation so new records are always visible.
-        /// </summary>
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            var currentUserEmail = _httpContextAccessor.HttpContext?.User
-                .FindFirst(ClaimTypes.Email)?.Value ?? "system";
-
-            var now = DateTime.UtcNow;
-
-            foreach (var entry in ChangeTracker.Entries<BaseEntity>())
-            {
-                if (entry.State == EntityState.Added)
-                {
-                    entry.Entity.CreatedAt = now;
-                    entry.Entity.UpdatedAt = now;
-                    entry.Entity.CreatedBy = currentUserEmail;
-                    entry.Entity.UpdatedBy = currentUserEmail;
-                    entry.Entity.IsDeleted = false;
-                }
-                else if (entry.State == EntityState.Modified)
-                {
-                    entry.Entity.UpdatedAt = now;
-                    entry.Entity.UpdatedBy = currentUserEmail;
-                }
-            }
-
+            UpdateAuditFields();
             return await base.SaveChangesAsync(cancellationToken);
         }
     }
 }
+

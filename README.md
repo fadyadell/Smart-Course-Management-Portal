@@ -13,7 +13,7 @@ This project is built with a focus on clean architecture, security, and performa
 
 ## ✨ Key Features
 
-- **Role-Based Access Control (RBAC):** Distinct experiences, dashboards, and permissions for Students, Instructors, and Administrators.
+- **Role-Based Access Control (RBAC):** Distinct experiences, dashboards, and permissions for Students and Instructors.
 - **Secure Authentication:** Industry-standard JWT (JSON Web Tokens) with refresh token rotation and military-grade BCrypt password hashing.
 - **Advanced Data Management:** Pagination, filtering, and sorting out-of-the-box using highly optimized EF Core projections (`.AsNoTracking()`).
 - **Audit Trails & Soft Deletes:** Automatic tracking of `CreatedAt`, `UpdatedAt`, and soft-deletion mechanisms via custom EF Core context hooks.
@@ -90,7 +90,7 @@ You can use the following default credentials to explore the platform without re
 | **Instructor** | instructor@example.com | `InstructorPass123!` |
 | **Student** | student@example.com | `StudentPass123!` |
 
-### Entity Relationships
+---
 
 ## 📂 Architecture Overview
 
@@ -118,9 +118,6 @@ This project uses **JWT tokens in the Authorization header** for stateless authe
 
 ---
 
-
----
-
 ## 🛣️ API Endpoints
 
 The frontend communicates with the backend via the following RESTful endpoints:
@@ -138,16 +135,17 @@ The frontend communicates with the backend via the following RESTful endpoints:
 | `GET` | `/api/courses` | List all available courses | Authenticated |
 | `GET` | `/api/courses/search` | Search & Paginated courses | Authenticated |
 | `GET` | `/api/courses/{id}` | Get specific course details | Authenticated |
-| `POST` | `/api/courses` | Create a new course | Admin, Instructor |
-| `PUT` | `/api/courses/{id}` | Update existing course | Admin, Instructor |
-| `DELETE` | `/api/courses/{id}` | Remove a course | Admin |
+| `POST` | `/api/courses` | Create a new course | Instructor |
+| `PUT` | `/api/courses/{id}` | Update existing course | Instructor |
+| `DELETE` | `/api/courses/{id}` | Remove a course | Instructor |
 
 ### Enrollments
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
 | `GET` | `/api/enrollments/my-enrollments` | View your course list | Student |
+| `GET` | `/api/enrollments/instructor/my-courses-enrollments` | View students in your courses | Instructor |
 | `POST` | `/api/enrollments` | Enroll in a new course | Student |
-| `DELETE` | `/api/enrollments/{id}` | Unenroll from a course | Student, Admin |
+| `DELETE` | `/api/enrollments/{id}` | Unenroll/Drop a student | Student, Instructor |
 
 ---
 
@@ -158,27 +156,17 @@ The frontend communicates with the backend via the following RESTful endpoints:
 ![Login](website%20screenshoots/home%20and%20login/Screenshot%202026-05-02%20191603.png)
 
 ### 🎓 Student Experience
-![Student Dashboard](website%20screenshoots/student/Screenshot%202026-05-02%20191641.png)
-![Student Courses](website%20screenshoots/student/Screenshot%202026-05-02%20191658.png)
-![Student Enrollments](website%20screenshoots/student/Screenshot%202026-05-02%20191712.png)
-![Student Profile](website%20screenshoots/student/Screenshot%202026-05-02%20191724.png)
+![Student Dashboard](website%20screenshoots/student/Screenshot%202026-05-12%20202956.png)
+![Student Courses](website%20screenshoots/student/Screenshot%202026-05-12%20203003.png)
+![Student Enrollments](website%20screenshoots/student/Screenshot%202026-05-12%20203018.png)
+![Course Details](website%20screenshoots/student/Screenshot%202026-05-12%20203026.png)
 
 ### 👨‍🏫 Instructor Experience
-![Instructor Dashboard](website%20screenshoots/instructor/Screenshot%202026-05-02%20191920.png)
-![Course Management](website%20screenshoots/instructor/Screenshot%202026-05-02%20191936.png)
-![Student List](website%20screenshoots/instructor/Screenshot%202026-05-02%20191947.png)
-![Add Course](website%20screenshoots/instructor/Screenshot%202026-05-02%20192543.png)
-![Instructor Tools](website%20screenshoots/instructor/Screenshot%202026-05-02%20192609.png)
-![Instructor Profile](website%20screenshoots/instructor/Screenshot%202026-05-02%20192617.png)
-![Settings](website%20screenshoots/instructor/Screenshot%202026-05-02%20192715.png)
-
-### 🛡️ Administrator Experience
-![Admin Overview](website%20screenshoots/admin/Screenshot%202026-05-02%20191802.png)
-![User Management](website%20screenshoots/admin/Screenshot%202026-05-02%20191815.png)
-![System Statistics](website%20screenshoots/admin/Screenshot%202026-05-02%20191830.png)
-![Global Settings](website%20screenshoots/admin/Screenshot%202026-05-02%20191839.png)
-![Audit Logs](website%20screenshoots/admin/Screenshot%202026-05-02%20191852.png)
-
+![Instructor Dashboard](website%20screenshoots/instructor/Screenshot%202026-05-12%20202843.png)
+![Manage Courses](website%20screenshoots/instructor/Screenshot%202026-05-12%20202902.png)
+![Students & Enrollments](website%20screenshoots/instructor/Screenshot%202026-05-12%20202910.png)
+![Add New Course](website%20screenshoots/instructor/Screenshot%202026-05-12%20202918.png)
+![Edit Course](website%20screenshoots/instructor/Screenshot%202026-05-12%20203048.png)
 
 ---
 

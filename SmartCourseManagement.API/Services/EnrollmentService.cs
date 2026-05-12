@@ -23,7 +23,7 @@ namespace SmartCourseManagement.API.Services
         }
 
         /// <summary>Returns paginated enrollments for a given student.</summary>
-        public async Task<PagedResponse<EnrollmentReadDto>> GetStudentEnrollmentsAsync(int studentId, PagedRequest request)
+        public async Task<PagedResult<EnrollmentReadDto>> GetStudentEnrollmentsAsync(int studentId, PagedRequest request)
         {
             var query = _context.Enrollments
                 .AsNoTracking()
@@ -50,11 +50,42 @@ namespace SmartCourseManagement.API.Services
                 })
                 .ToListAsync();
 
-            return new PagedResponse<EnrollmentReadDto>(items, total, request.Page, request.PageSize);
+            return new PagedResult<EnrollmentReadDto>(items, total, request.Page, request.PageSize);
+        }
+
+        /// <summary>Returns all enrollments for courses taught by a specific instructor.</summary>
+        public async Task<PagedResult<EnrollmentReadDto>> GetInstructorCoursesEnrollmentsAsync(int instructorUserId, PagedRequest request)
+        {
+            var query = _context.Enrollments
+                .AsNoTracking()
+                .Where(e => e.Course.Instructor.UserId == instructorUserId);
+
+            var total = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(e => e.EnrollmentDate)
+                .Skip(request.Skip)
+                .Take(request.Take)
+                .Select(e => new EnrollmentReadDto
+                {
+                    Id = e.Id,
+                    StudentId = e.StudentId,
+                    StudentName = e.Student.Name,
+                    CourseId = e.CourseId,
+                    CourseTitle = e.Course.Title,
+                    EnrollmentDate = e.EnrollmentDate,
+                    CreatedAt = e.CreatedAt,
+                    CreatedBy = e.CreatedBy,
+                    UpdatedAt = e.UpdatedAt,
+                    UpdatedBy = e.UpdatedBy
+                })
+                .ToListAsync();
+
+            return new PagedResult<EnrollmentReadDto>(items, total, request.Page, request.PageSize);
         }
 
         /// <summary>Returns all enrollments with optional filtering and pagination (Admin/Instructor).</summary>
-        public async Task<PagedResponse<EnrollmentReadDto>> GetAllEnrollmentsAsync(EnrollmentFilterRequest filter)
+        public async Task<PagedResult<EnrollmentReadDto>> GetAllEnrollmentsAsync(EnrollmentFilterRequest filter)
         {
             var query = _context.Enrollments.AsNoTracking().AsQueryable();
 
@@ -89,7 +120,7 @@ namespace SmartCourseManagement.API.Services
                 })
                 .ToListAsync();
 
-            return new PagedResponse<EnrollmentReadDto>(items, total, filter.Page, filter.PageSize);
+            return new PagedResult<EnrollmentReadDto>(items, total, filter.Page, filter.PageSize);
         }
 
         /// <summary>Enrolls a student in a course and sends a confirmation email.</summary>
@@ -146,6 +177,30 @@ namespace SmartCourseManagement.API.Services
         {
             var enrollment = await _context.Enrollments.FindAsync(id);
             if (enrollment == null) return false;
+
+            enrollment.IsDeleted = true;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        /// <summary>Soft-deletes (unenrolls) an enrollment, but only if the instructor owns the course.</summary>
+        public async Task<bool> UnenrollStudentByInstructorAsync(int enrollmentId, int instructorUserId)
+        {
+            var enrollment = await _context.Enrollments
+                .Include(e => e.Course)
+                .FirstOrDefaultAsync(e => e.Id == enrollmentId);
+
+            if (enrollment == null)
+                return false;
+
+            // Verify that the instructor owns this course (via InstructorProfile.UserId)
+            var course = enrollment.Course;
+            var instructorProfile = await _context.InstructorProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(ip => ip.Id == course.InstructorId);
+
+            if (instructorProfile == null || instructorProfile.UserId != instructorUserId)
+                throw new UnauthorizedAccessException("You can only drop students from your own courses.");
 
             enrollment.IsDeleted = true;
             await _context.SaveChangesAsync();

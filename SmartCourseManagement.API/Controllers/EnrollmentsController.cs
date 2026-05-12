@@ -25,14 +25,14 @@ namespace SmartCourseManagement.API.Controllers
         /// <summary>Get the current student's enrollments (extracted from JWT token).</summary>
         [HttpGet("my-enrollments")]
         [Authorize(Roles = "Student")]
-        [ProducesResponseType(typeof(EnrollmentReadDto[]), 200)]
-        public async Task<IActionResult> GetMyEnrollments()
+        [ProducesResponseType(typeof(PagedResult<EnrollmentReadDto>), 200)]
+        public async Task<IActionResult> GetMyEnrollments([FromQuery] PagedRequest request)
         {
             var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
 
             var userId = int.Parse(userIdStr);
-            var enrollments = await _enrollmentService.GetStudentEnrollmentsAsync(userId);
+            var enrollments = await _enrollmentService.GetStudentEnrollmentsAsync(userId, request);
             return Ok(enrollments);
         }
 
@@ -41,10 +41,28 @@ namespace SmartCourseManagement.API.Controllers
         /// </summary>
         [HttpGet("student/{studentId}")]
         [Authorize(Roles = "Admin,Instructor")]
-        [ProducesResponseType(typeof(EnrollmentReadDto[]), 200)]
-        public async Task<IActionResult> GetStudentEnrollments(int studentId)
+        [ProducesResponseType(typeof(PagedResult<EnrollmentReadDto>), 200)]
+        public async Task<IActionResult> GetStudentEnrollments(int studentId, [FromQuery] PagedRequest request)
         {
-            var enrollments = await _enrollmentService.GetStudentEnrollmentsAsync(studentId);
+            var enrollments = await _enrollmentService.GetStudentEnrollmentsAsync(studentId, request);
+            return Ok(enrollments);
+        }
+
+        /// <summary>
+        /// Get all enrollments for the logged-in instructor's courses.
+        /// </summary>
+        [HttpGet("instructor/my-courses-enrollments")]
+        [Authorize(Roles = "Instructor")]
+        [ProducesResponseType(typeof(PagedResult<EnrollmentReadDto>), 200)]
+        public async Task<IActionResult> GetMyCoursesEnrollments([FromQuery] PagedRequest request)
+        {
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+
+            var userId = int.Parse(userIdStr);
+
+            // Get all enrollments for courses taught by this instructor
+            var enrollments = await _enrollmentService.GetInstructorCoursesEnrollmentsAsync(userId, request);
             return Ok(enrollments);
         }
 
@@ -76,16 +94,41 @@ namespace SmartCourseManagement.API.Controllers
             }
         }
 
-        /// <summary>Remove an enrollment by ID. Admin or Student.</summary>
+        /// <summary>Remove an enrollment by ID. Admin, Instructor (from own course), or Student.</summary>
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin,Student")]
+        [Authorize(Roles = "Admin,Student,Instructor")]
         [ProducesResponseType(204)]
         [ProducesResponseType(404)]
+        [ProducesResponseType(403)]
         public async Task<IActionResult> Unenroll(int id)
         {
-            var result = await _enrollmentService.UnenrollStudentAsync(id);
-            if (!result) return NotFound(new { message = $"Enrollment {id} not found." });
-            return NoContent();
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+
+            var userId = int.Parse(userIdStr);
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            try
+            {
+                bool result;
+                if (userRole == "Instructor")
+                {
+                    // Instructor can only drop students from their own courses
+                    result = await _enrollmentService.UnenrollStudentByInstructorAsync(id, userId);
+                }
+                else
+                {
+                    // Admin and Student use the general method
+                    result = await _enrollmentService.UnenrollStudentAsync(id);
+                }
+
+                if (!result) return NotFound(new { message = $"Enrollment {id} not found." });
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid();
+            }
         }
     }
 }

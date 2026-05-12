@@ -206,7 +206,7 @@ export default function CourseDetail() {
               )
             ) : (
               <p className="td-muted" style={{ fontSize: '0.9rem' }}>
-                {user?.role === 'Instructor' || user?.role === 'Admin'
+                {user?.role === 'Instructor'
                   ? 'Enrollment is available to students only.'
                   : 'Log in as a student to enroll.'}
               </p>

@@ -11,11 +11,6 @@ using Microsoft.IdentityModel.Tokens;
 using SmartCourseManagement.API.Data;
 using SmartCourseManagement.API.DTOs;
 using SmartCourseManagement.API.Models;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace SmartCourseManagement.API.Services
 {
@@ -183,7 +178,7 @@ namespace SmartCourseManagement.API.Services
                 signingCredentials: creds
             );
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return (new JwtSecurityTokenHandler().WriteToken(token), expiryDate);
         }
 
         /// <summary>

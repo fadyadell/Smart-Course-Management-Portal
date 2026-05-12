@@ -29,7 +29,6 @@ namespace SmartCourseManagement.API.Controllers
         /// <summary>
         /// Get paginated list of courses. Supports search, filter by instructor/credits, and sorting.
         /// </summary>
-        /// <param name="query">page, pageSize, search, instructorId, credits, sortBy, sortDesc</param>
         [HttpGet]
         [ProducesResponseType(typeof(PagedResult<CourseReadDto>), 200)]
         public async Task<IActionResult> GetAll([FromQuery] CourseQueryParams query)
@@ -38,32 +37,20 @@ namespace SmartCourseManagement.API.Controllers
             return Ok(result);
         }
 
-        /// <summary>Get courses with pagination and search. Query params: page, pageSize, searchTerm, sortBy, sortDescending.</summary>
+        /// <summary>Get courses with pagination and search. Used by frontend.</summary>
         [HttpGet("search")]
-        [ProducesResponseType(typeof(PaginationResponseDto<CourseReadDto>), 200)]
-        public async Task<IActionResult> GetPaged([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string searchTerm = null)
+        [ProducesResponseType(typeof(PagedResult<CourseReadDto>), 200)]
+        public async Task<IActionResult> GetSearch([FromQuery] CourseQueryParams query)
         {
-            var paginationDto = new PaginationRequestDto 
-            { 
-                Page = page, 
-                PageSize = pageSize, 
-                SearchTerm = searchTerm 
-            };
-            var result = await _courseService.GetCoursesPagedAsync(paginationDto);
+            // Ensure Search is populated from SearchTerm if provided
+            if (string.IsNullOrEmpty(query.Search) && !string.IsNullOrEmpty(query.SearchTerm))
+            {
+                query.Search = query.SearchTerm;
+            }
+            var result = await _courseService.GetCoursesAsync(query);
             return Ok(result);
         }
 
-        /// <summary>
-        /// Get paginated courses with optional search, filter, and sort.
-        /// Query parameters: page, pageSize, searchTerm, sortBy, filter (credits value)
-        /// </summary>
-        [HttpGet("paged")]
-        [ProducesResponseType(typeof(PagedResponse<CourseReadDto>), 200)]
-        public async Task<IActionResult> GetPaged([FromQuery] PagedRequest request)
-        {
-            var result = await _courseService.GetCoursesAsync(request);
-            return Ok(result);
-        }
 
         /// <summary>Get a course by ID.</summary>
         [HttpGet("{id}")]

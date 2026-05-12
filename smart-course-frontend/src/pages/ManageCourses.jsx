@@ -4,7 +4,7 @@ import { getCourses, deleteCourse, getInstructors } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 
 export default function ManageCourses() {
-  const { isAdmin } = useAuth();
+  const { canManageCourses } = useAuth();
   const navigate = useNavigate();
 
   const [courses, setCourses] = useState([]);
@@ -78,7 +78,7 @@ export default function ManageCourses() {
                 <th>Credits</th>
                 <th>Instructor</th>
                 <th>Created</th>
-                {isAdmin && <th>Actions</th>}
+                {canManageCourses && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -100,7 +100,7 @@ export default function ManageCourses() {
                   <td className="td-muted">
                     {new Date(c.createdAt).toLocaleDateString()}
                   </td>
-                  {isAdmin && (
+                  {canManageCourses && (
                     <td>
                       <button
                         className="btn btn-secondary btn-sm"

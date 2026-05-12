@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace SmartCourseManagement.API.DTOs
@@ -21,8 +22,8 @@ namespace SmartCourseManagement.API.DTOs
         public string Password { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Role is required")]
-        [RegularExpression("^(Admin|Instructor|Student)$",
-            ErrorMessage = "Role must be Admin, Instructor, or Student")]
+        [RegularExpression("^(Instructor|Student)$",
+            ErrorMessage = "Role must be Instructor or Student")]
         public string Role { get; set; } = string.Empty;
     }
 
@@ -62,17 +63,18 @@ namespace SmartCourseManagement.API.DTOs
         public UserReadDto User { get; set; }
     }
 
-    // DTO for requesting a new access token using a refresh token
-    public class RefreshTokenRequestDto
-    {
-        [Required(ErrorMessage = "Refresh token is required")]
-        public string RefreshToken { get; set; }
-    }
-
     // DTO returned when refreshing the token
     public class RefreshTokenResponseDto
     {
         public string AccessToken { get; set; }
         public DateTime AccessTokenExpiry { get; set; }
     }
+
+    public class UserUpdateDto
+    {
+        public string? Name { get; set; }
+        public string? Email { get; set; }
+        public string? Role { get; set; }
+    }
 }
+

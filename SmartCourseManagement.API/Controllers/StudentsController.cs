@@ -22,10 +22,10 @@ namespace SmartCourseManagement.API.Controllers
 
         /// <summary>Get all students. Admin and Instructor only.</summary>
         [HttpGet]
-        [ProducesResponseType(typeof(StudentReadDto[]), 200)]
-        public async Task<IActionResult> GetAll()
+        [ProducesResponseType(typeof(PagedResult<StudentReadDto>), 200)]
+        public async Task<IActionResult> GetAll([FromQuery] PagedRequest request)
         {
-            var students = await _studentService.GetAllStudentsAsync();
+            var students = await _studentService.GetAllStudentsAsync(request);
             return Ok(students);
         }
 

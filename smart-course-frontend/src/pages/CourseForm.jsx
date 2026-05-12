@@ -67,7 +67,7 @@ export default function CourseForm() {
         setSuccess('Course created successfully!');
       }
 
-      setTimeout(() => navigate('/manage-courses'), 1500);
+      setTimeout(() => navigate('/courses'), 1500);
     } catch (err) {
       setError(err.message || 'Action failed.');
     } finally {
@@ -92,7 +92,7 @@ export default function CourseForm() {
             {isEdit ? `Modifying course #${id}` : 'Fill in the details to offer a new course'}
           </p>
         </div>
-        <button className="btn btn-secondary" onClick={() => navigate('/manage-courses')}>
+        <button className="btn btn-secondary" onClick={() => navigate('/courses')}>
           ← Back to List
         </button>
       </div>
@@ -172,7 +172,7 @@ export default function CourseForm() {
             <button
               type="button"
               className="btn btn-secondary btn-lg"
-              onClick={() => navigate('/manage-courses')}
+              onClick={() => navigate('/courses')}
             >
               Cancel
             </button>

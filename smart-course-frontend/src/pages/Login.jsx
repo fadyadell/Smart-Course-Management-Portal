@@ -161,7 +161,6 @@ export default function Login() {
                 >
                   <option value="Student">Student</option>
                   <option value="Instructor">Instructor</option>
-                  <option value="Admin">Admin</option>
                 </select>
               </div>
             )}

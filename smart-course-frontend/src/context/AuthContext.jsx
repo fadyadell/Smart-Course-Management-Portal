@@ -52,17 +52,15 @@ export function AuthProvider({ children }) {
 
   // ── Derived helpers ────────────────────────
   const isAuthenticated = !!token && !!user;
-  const isAdmin = user?.role === 'Admin';
   const isInstructor = user?.role === 'Instructor';
   const isStudent = user?.role === 'Student';
-  const canManageCourses = isAdmin || isInstructor;
+  const canManageCourses = isInstructor;
 
   const value = {
     user,
     token,
     loading,
     isAuthenticated,
-    isAdmin,
     isInstructor,
     isStudent,
     canManageCourses,

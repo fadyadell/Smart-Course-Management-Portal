@@ -1,10 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
-  enrollCourse,
-  getCourses,
-  getMyEnrollments,
-  getStudentById,
-  getStudentEnrollments,
+  getInstructorCoursesEnrollments,
   unenrollCourse,
 } from '../api/api';
 import { useAuth } from '../context/AuthContext';
@@ -14,359 +10,167 @@ function normalizeList(data) {
 }
 
 export default function Enrollments() {
-  const { user, isStudent, isAdmin } = useAuth();
+  const { user, isInstructor } = useAuth();
 
-  const [courses, setCourses] = useState([]);
-  const [coursesLoading, setCoursesLoading] = useState(false);
-  const [coursesError, setCoursesError] = useState('');
+  const [enrollments, setEnrollments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const [myEnrollments, setMyEnrollments] = useState([]);
-  const [myEnrollmentsLoading, setMyEnrollmentsLoading] = useState(false);
-  const [myEnrollmentsError, setMyEnrollmentsError] = useState('');
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const [selectedCourseId, setSelectedCourseId] = useState('');
-  const [enrolling, setEnrolling] = useState(false);
-
-  const [lookupStudentId, setLookupStudentId] = useState('');
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [lookupError, setLookupError] = useState('');
-  const [lookupStudent, setLookupStudent] = useState(null);
-  const [lookupEnrollments, setLookupEnrollments] = useState([]);
-
-  const loadCourses = async () => {
-    setCoursesLoading(true);
-    setCoursesError('');
-
+  // ── Fetch enrollments for the instructor's courses ──
+  const fetchEnrollments = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
-      const data = await getCourses();
-      setCourses(normalizeList(data));
+      const data = await getInstructorCoursesEnrollments(page, pageSize);
+      if (Array.isArray(data)) {
+        setEnrollments(data);
+        setTotalPages(1);
+      } else {
+        setEnrollments(data.items ?? []);
+        setTotalPages(data.totalPages ?? 1);
+      }
     } catch (err) {
-      setCoursesError(err.message || 'Failed to load courses.');
+      setError(err.message || 'Failed to load enrollments.');
     } finally {
-      setCoursesLoading(false);
+      setLoading(false);
     }
-  };
-
-  const loadMyEnrollments = async () => {
-    setMyEnrollmentsLoading(true);
-    setMyEnrollmentsError('');
-
-    try {
-      const data = await getMyEnrollments();
-      setMyEnrollments(normalizeList(data));
-    } catch (err) {
-      setMyEnrollmentsError(err.message || 'Failed to load enrollments.');
-    } finally {
-      setMyEnrollmentsLoading(false);
-    }
-  };
-
-  const loadLookupEnrollments = async (studentId) => {
-    if (!studentId) return;
-
-    setLookupLoading(true);
-    setLookupError('');
-
-    try {
-      const [student, enrollments] = await Promise.all([
-        getStudentById(studentId),
-        getStudentEnrollments(studentId),
-      ]);
-
-      setLookupStudent(student);
-      setLookupEnrollments(normalizeList(enrollments));
-    } catch (err) {
-      setLookupStudent(null);
-      setLookupEnrollments([]);
-      setLookupError(err.message || 'Failed to load student enrollments.');
-    } finally {
-      setLookupLoading(false);
-    }
-  };
+  }, [page, pageSize]);
 
   useEffect(() => {
-    if (isStudent) {
-      loadCourses();
-      loadMyEnrollments();
+    if (isInstructor) {
+      fetchEnrollments();
     }
-  }, [isStudent]);
+  }, [isInstructor, fetchEnrollments]);
 
-  const availableCourses = useMemo(() => {
-    if (!isStudent) return courses;
-    return courses.filter(
-      (course) => !myEnrollments.some((enrollment) => enrollment.courseId === course.id)
-    );
-  }, [courses, isStudent, myEnrollments]);
-
-  useEffect(() => {
-    if (isStudent && availableCourses.length > 0 && !selectedCourseId) {
-      setSelectedCourseId(String(availableCourses[0].id));
-    }
-  }, [availableCourses, isStudent, selectedCourseId]);
-
-  const handleEnroll = async (event) => {
-    event.preventDefault();
-    if (!selectedCourseId) return;
-
-    setEnrolling(true);
-    setMyEnrollmentsError('');
-
-    try {
-      await enrollCourse(user.id, Number(selectedCourseId));
-      await loadMyEnrollments();
-    } catch (err) {
-      setMyEnrollmentsError(err.message || 'Failed to enroll in course.');
-    } finally {
-      setEnrolling(false);
-    }
-  };
-
-  const handleLookup = async (event) => {
-    event.preventDefault();
-    const studentId = Number(lookupStudentId);
-    if (!studentId) return;
-
-    await loadLookupEnrollments(studentId);
-  };
-
-  const handleUnenroll = async (enrollmentId) => {
-    if (!window.confirm('Remove this enrollment?')) return;
+  // ── Drop a student ──
+  const handleDrop = async (enrollmentId, studentName, courseTitle) => {
+    if (
+      !window.confirm(
+        `Drop "${studentName}" from "${courseTitle}"? This action can be undone by re-enrolling.`
+      )
+    )
+      return;
 
     try {
       await unenrollCourse(enrollmentId);
-
-      if (isStudent) {
-        await loadMyEnrollments();
-      } else if (lookupStudentId) {
-        await loadLookupEnrollments(Number(lookupStudentId));
-      }
+      fetchEnrollments();
     } catch (err) {
-      alert(err.message);
+      alert(err.message || 'Failed to drop the student.');
     }
   };
-
-  const activeEnrollments = isStudent ? myEnrollments : lookupEnrollments;
 
   return (
     <div className="page-wrapper">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Enrollments</h1>
+          <h1 className="page-title">Students & Enrollments</h1>
           <p className="page-subtitle">
-            {isStudent
-              ? 'Enroll in courses and manage your active registrations'
-              : 'Look up student enrollments and manage records'}
+            Manage students enrolled in your courses
           </p>
         </div>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '1.5rem',
-          alignItems: 'start',
-        }}
-      >
-        <section className="manage-form-card">
-          <h2 className="form-heading">
-            {isStudent ? 'Enroll in a Course' : 'Find a Student'}
-          </h2>
+      {/* Loading */}
+      {loading && (
+        <div className="loading-state">
+          <div className="loading-spinner" />
+          <p>Loading enrollments…</p>
+        </div>
+      )}
 
-          {isStudent ? (
-            <form onSubmit={handleEnroll} className="manage-form" noValidate>
-              {coursesLoading && (
-                <div className="loading-state">
-                  <div className="loading-spinner" />
-                  <p>Loading courses...</p>
-                </div>
-              )}
+      {/* Error */}
+      {!loading && error && (
+        <div className="alert alert-error">
+          <span>⚠</span> {error}{' '}
+          <button className="link-btn" onClick={fetchEnrollments}>
+            Retry
+          </button>
+        </div>
+      )}
 
-              {!coursesLoading && coursesError && (
-                <div className="alert alert-error">
-                  <span>⚠</span> {coursesError}
-                  <button type="button" className="link-btn" onClick={loadCourses}>
-                    Retry
-                  </button>
-                </div>
-              )}
+      {/* Empty state */}
+      {!loading && !error && enrollments.length === 0 && (
+        <div className="empty-state">
+          <div className="empty-icon">🗂</div>
+          <h3>No enrollments found</h3>
+          <p>No students are currently enrolled in any of your courses.</p>
+        </div>
+      )}
 
-              {!coursesLoading && !coursesError && (
-                <>
-                  <div className="form-group">
-                    <label htmlFor="courseId">Available Courses</label>
-                    <select
-                      id="courseId"
-                      value={selectedCourseId}
-                      onChange={(event) => setSelectedCourseId(event.target.value)}
-                      disabled={availableCourses.length === 0}
-                    >
-                      {availableCourses.length === 0 ? (
-                        <option value="">No courses available</option>
-                      ) : (
-                        <>
-                          <option value="">Select a course</option>
-                          {availableCourses.map((course) => (
-                            <option key={course.id} value={course.id}>
-                              {course.title} (#{course.id})
-                            </option>
-                          ))}
-                        </>
-                      )}
-                    </select>
-                  </div>
-
-                  <p className="section-note">
-                    {availableCourses.length === 0
-                      ? 'You are already enrolled in every available course.'
-                      : 'Pick a course to enroll yourself. The backend enforces the logged-in student.'}
-                  </p>
-
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={enrolling || availableCourses.length === 0}
-                  >
-                    {enrolling ? <span className="loading-spinner-sm" /> : 'Enroll'}
-                  </button>
-                </>
-              )}
-            </form>
-          ) : (
-            <form onSubmit={handleLookup} className="manage-form" noValidate>
-              <div className="form-group">
-                <label htmlFor="lookupStudentId">Student ID</label>
-                <input
-                  id="lookupStudentId"
-                  type="number"
-                  min={1}
-                  value={lookupStudentId}
-                  onChange={(event) => setLookupStudentId(event.target.value)}
-                  placeholder="Enter a student ID"
-                  required
-                />
-              </div>
-
-              <p className="section-note">
-                Use the Students page to find IDs quickly.
-              </p>
-
-              <button type="submit" className="btn btn-primary" disabled={lookupLoading}>
-                {lookupLoading ? <span className="loading-spinner-sm" /> : 'Load Enrollments'}
-              </button>
-            </form>
-          )}
-        </section>
-
-        <section className="manage-form-card">
-          <h2 className="form-heading">
-            {isStudent
-              ? 'My Enrollments'
-              : lookupStudent
-              ? `Enrollments for ${lookupStudent.name}`
-              : 'Enrollment Results'}
-          </h2>
-
-          {isStudent && myEnrollmentsLoading && (
-            <div className="loading-state">
-              <div className="loading-spinner" />
-              <p>Loading your enrollments...</p>
-            </div>
-          )}
-
-          {isStudent && myEnrollmentsError && (
-            <div className="alert alert-error">
-              <span>⚠</span> {myEnrollmentsError}
-              <button type="button" className="link-btn" onClick={loadMyEnrollments}>
-                Retry
-              </button>
-            </div>
-          )}
-
-          {!isStudent && lookupError && (
-            <div className="alert alert-error">
-              <span>⚠</span> {lookupError}
-            </div>
-          )}
-
-          {!isStudent && lookupLoading && (
-            <div className="loading-state">
-              <div className="loading-spinner" />
-              <p>Loading student enrollments...</p>
-            </div>
-          )}
-
-          {!isStudent && lookupStudent && (
-            <div className="info-banner" style={{ marginBottom: '1rem' }}>
-              <span>👤</span>
-              <p>
-                {lookupStudent.name} ({lookupStudent.email})
-              </p>
-            </div>
-          )}
-
-          {!isStudent && !lookupStudent && !lookupLoading && !lookupError && (
-            <div className="empty-state">
-              <div className="empty-icon">🔎</div>
-              <h3>No student selected</h3>
-              <p>Enter a student ID to load their enrollment history.</p>
-            </div>
-          )}
-
-          {activeEnrollments.length === 0 && (
-            <div className="empty-state">
-              <div className="empty-icon">🗂</div>
-              <h3>No enrollments found</h3>
-              <p>
-                {isStudent
-                  ? 'Head to the Courses page to enroll in a class.'
-                  : 'Search for a student to review their enrollments.'}
-              </p>
-            </div>
-          )}
-
-          {activeEnrollments.length > 0 && (
-            <div className="table-responsive">
-              <table className="manage-table">
-                <thead>
-                  <tr>
-                    <th>Course</th>
-                    <th>Enrolled</th>
-                    <th>Student</th>
-                    <th>Actions</th>
+      {/* Enrollments table */}
+      {!loading && !error && enrollments.length > 0 && (
+        <>
+          <div className="manage-table-wrapper">
+            <table className="manage-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Student</th>
+                  <th>Course</th>
+                  <th>Enrolled On</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {enrollments.map((e, i) => (
+                  <tr key={e.id}>
+                    <td className="td-muted">{(page - 1) * pageSize + i + 1}</td>
+                    <td>
+                      <strong>{e.studentName || `Student #${e.studentId}`}</strong>
+                    </td>
+                    <td>{e.courseTitle || `Course #${e.courseId}`}</td>
+                    <td className="td-muted">
+                      {new Date(e.enrollmentDate).toLocaleDateString()}
+                    </td>
+                    <td>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() =>
+                          handleDrop(
+                            e.id,
+                            e.studentName || `Student #${e.studentId}`,
+                            e.courseTitle || `Course #${e.courseId}`
+                          )
+                        }
+                      >
+                        Drop Student
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {activeEnrollments.map((enrollment) => (
-                    <tr key={enrollment.id}>
-                      <td>
-                        <strong>{enrollment.courseTitle || `Course #${enrollment.courseId}`}</strong>
-                      </td>
-                      <td className="td-muted">
-                        {new Date(enrollment.enrollmentDate).toLocaleDateString()}
-                      </td>
-                      <td className="td-muted">
-                        {enrollment.studentName || `#${enrollment.studentId}`}
-                      </td>
-                      <td>
-                        {(isStudent || isAdmin) && (
-                          <button
-                            type="button"
-                            className="btn btn-danger btn-sm"
-                            onClick={() => handleUnenroll(enrollment.id)}
-                          >
-                            Drop
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                ← Prev
+              </button>
+              <span className="page-info">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+              >
+                Next →
+              </button>
             </div>
           )}
-        </section>
-      </div>
+        </>
+      )}
     </div>
   );
 }

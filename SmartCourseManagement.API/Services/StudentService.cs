@@ -19,7 +19,7 @@ namespace SmartCourseManagement.API.Services
         }
 
         /// <summary>Returns paginated students, optionally filtered by SearchTerm (name or email).</summary>
-        public async Task<PagedResponse<StudentReadDto>> GetAllStudentsAsync(PagedRequest request)
+        public async Task<PagedResult<StudentReadDto>> GetAllStudentsAsync(PagedRequest request)
         {
             var query = _context.Users
                 .AsNoTracking()
@@ -41,7 +41,7 @@ namespace SmartCourseManagement.API.Services
                 _ => query.OrderBy(u => u.Name)
             };
 
-            var total = await query.CountAsync();
+            var totalCount = await query.CountAsync();
 
             var items = await query
                 .Skip(request.Skip)
@@ -49,7 +49,7 @@ namespace SmartCourseManagement.API.Services
                 .Select(u => new StudentReadDto { Id = u.Id, Name = u.Name, Email = u.Email })
                 .ToListAsync();
 
-            return new PagedResponse<StudentReadDto>(items, total, request.Page, request.PageSize);
+            return new PagedResult<StudentReadDto>(items, totalCount, request.Page, request.PageSize);
         }
 
         /// <summary>Returns a single student by ID.</summary>

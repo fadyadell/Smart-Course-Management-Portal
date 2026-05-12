@@ -8,8 +8,9 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
+import CourseDetail from './pages/CourseDetail';
 import MyEnrollments from './pages/MyEnrollments';
-import ManageCourses from './pages/ManageCourses';
+import Enrollments from './pages/Enrollments';
 import CourseForm from './pages/CourseForm';
 import Students from './pages/Students';
 import Instructors from './pages/Instructors';
@@ -61,6 +62,14 @@ function AppShell() {
               </PrivateRoute>
             }
           />
+          <Route
+            path="/courses/:id"
+            element={
+              <PrivateRoute>
+                <CourseDetail />
+              </PrivateRoute>
+            }
+          />
 
           {/* Private — Student only */}
           <Route
@@ -74,18 +83,9 @@ function AppShell() {
 
           {/* Private — Admin or Instructor */}
           <Route
-            path="/manage-courses"
-            element={
-              <PrivateRoute roles={['Admin', 'Instructor']}>
-                <ManageCourses />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
             path="/courses/new"
             element={
-              <PrivateRoute roles={['Admin', 'Instructor']}>
+              <PrivateRoute roles={['Instructor']}>
                 <CourseForm />
               </PrivateRoute>
             }
@@ -94,17 +94,20 @@ function AppShell() {
           <Route
             path="/courses/edit/:id"
             element={
-              <PrivateRoute roles={['Admin', 'Instructor']}>
+              <PrivateRoute roles={['Instructor']}>
                 <CourseForm />
               </PrivateRoute>
             }
           />
 
+
+
+          {/* Private — Instructor only: view enrollments for their courses */}
           <Route
-            path="/students"
+            path="/enrollments"
             element={
-              <PrivateRoute roles={['Admin', 'Instructor']}>
-                <Students />
+              <PrivateRoute roles={['Instructor']}>
+                <Enrollments />
               </PrivateRoute>
             }
           />

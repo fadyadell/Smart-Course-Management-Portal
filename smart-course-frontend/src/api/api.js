@@ -4,7 +4,7 @@ import Cookies from 'js-cookie';
 // ─────────────────────────────────────────────
 //  API Configuration
 // ─────────────────────────────────────────────
-const BASE_URL = 'http://127.0.0.1:5202/api';
+const BASE_URL = 'http://localhost:5202/api/v1';
 
 
 // Axios Instance
@@ -199,6 +199,12 @@ export async function getStudentEnrollments(studentId) {
   return res.data;
 }
 
+export async function getInstructorCoursesEnrollments(page = 1, pageSize = 20) {
+  const params = { page, pageSize };
+  const res = await api.get('/enrollments/instructor/my-courses-enrollments', { params });
+  return res.data;
+}
+
 // ─────────────────────────────────────────────
 //  Instructor & Student Endpoints
 // ─────────────────────────────────────────────
@@ -228,76 +234,7 @@ export async function getStudentById(id) {
   return res.data;
 }
 
-// ─────────────────────────────────────────────
-//  Student Endpoints
-// ─────────────────────────────────────────────
-
-/**
- * Get all students (Admin/Instructor only).
- * GET /api/students
- */
-export async function getStudents() {
-  const res = await apiFetch('/students');
-  if (!res.ok) throw new Error('Failed to fetch students.');
-  return res.json();
-}
-
-/**
- * Get a student by ID (Admin/Instructor only).
- * GET /api/students/{id}
- */
-export async function getStudentById(id) {
-  const res = await apiFetch(`/students/${id}`);
-  if (!res.ok) throw new Error(`Student ${id} not found.`);
-  return res.json();
-}
-
-// ─────────────────────────────────────────────
-//  Instructor Endpoints
-// ─────────────────────────────────────────────
-
-/**
- * Get all instructor profiles.
- * GET /api/instructors
- */
-export async function getInstructors() {
-  const res = await apiFetch('/instructors');
-  if (!res.ok) throw new Error('Failed to fetch instructors.');
-  return res.json();
-}
-
-/**
- * Get an instructor profile by ID.
- * GET /api/instructors/{id}
- */
-export async function getInstructorById(id) {
-  const res = await apiFetch(`/instructors/${id}`);
-  if (!res.ok) throw new Error(`Instructor ${id} not found.`);
-  return res.json();
-}
-
-/**
- * Update the current instructor's profile (biography, office location).
- * PUT /api/instructors/profile
- * Body: { biography, officeLocation }
- */
-export async function updateInstructorProfile(profileData) {
-  const res = await apiFetch('/instructors/profile', {
-    method: 'PUT',
-    body: JSON.stringify(profileData),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || 'Failed to update profile.');
-  }
-  return true;
-}
-
-/**
- * Update a course (Admin/Instructor only) — full replacement with PATCH-style body.
- * PUT /api/courses/{id}
- * Body: { title, description, credits }
- */
 export async function updateCourseById(id, courseData) {
   return updateCourse(id, courseData);
 }
+

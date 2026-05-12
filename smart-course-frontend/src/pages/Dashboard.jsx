@@ -20,19 +20,17 @@ export default function Dashboard() {
           isStudent ? getMyEnrollments() : Promise.resolve([]),
         ]);
 
+        const getCount = (res) => {
+          if (res.status !== 'fulfilled' || !res.value) return '—';
+          const val = res.value;
+          if (Array.isArray(val)) return val.length;
+          // Handle PagedResult { items: [], totalCount: n }
+          return val.totalCount ?? val.TotalCount ?? val.items?.length ?? val.Items?.length ?? 0;
+        };
+
         setStats({
-          totalCourses:
-            coursesData.status === 'fulfilled'
-              ? Array.isArray(coursesData.value)
-                ? coursesData.value.length
-                : coursesData.value?.items?.length ?? '—'
-              : '—',
-          myEnrollments:
-            enrollData.status === 'fulfilled'
-              ? Array.isArray(enrollData.value)
-                ? enrollData.value.length
-                : '—'
-              : '—',
+          totalCourses: getCount(coursesData),
+          myEnrollments: getCount(enrollData),
         });
       } finally {
         setLoading(false);
@@ -43,7 +41,6 @@ export default function Dashboard() {
   }, [isStudent]);
 
   const roleColor = {
-    Admin: '#f59e0b',
     Instructor: '#3b82f6',
     Student: '#10b981',
   };
@@ -140,11 +137,22 @@ export default function Dashboard() {
           )}
 
           {canManageCourses && (
-            <Link to="/manage-courses" className="quick-action-card">
+            <Link to="/courses" className="quick-action-card">
               <div className="qa-icon">⚙️</div>
               <div className="qa-body">
                 <h3>Manage Courses</h3>
-                <p>Create, edit, or delete courses</p>
+                <p>Create, edit, or delete your courses</p>
+              </div>
+              <span className="qa-arrow">→</span>
+            </Link>
+          )}
+
+          {canManageCourses && (
+            <Link to="/enrollments" className="quick-action-card">
+              <div className="qa-icon">📋</div>
+              <div className="qa-body">
+                <h3>Students & Enrollments</h3>
+                <p>View and manage students in your courses</p>
               </div>
               <span className="qa-arrow">→</span>
             </Link>
